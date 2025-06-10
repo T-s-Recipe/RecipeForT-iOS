@@ -8,29 +8,23 @@
 import SwiftUI
 
 struct MainView: View {
+    @EnvironmentObject private var router: Router
+    
+    @State private var recipes: [Recipe] = [
+        .init(id: 0, title: "브로콜리 두부 무침", imageURL: nil, servingsCount: 3, cost: 4000, cookingTime: 15, ownerName: "홍길동", additionalInformation: "부가설명"),
+        .init(id: 1, title: "김치찌개", imageURL: nil, servingsCount: 4, cost: 3000, cookingTime: 20, ownerName: "김영희", additionalInformation: "부가설명"),
+        .init(id: 2, title: "소고기 볶음밥", imageURL: nil, servingsCount: 2, cost: 5000, cookingTime: 30, ownerName: "이영수", additionalInformation: "부가설명"),
+        .init(id: 3, title: "오이소박이", imageURL: nil, servingsCount: 1, cost: 2000, cookingTime: 10, ownerName: "최민영", additionalInformation: "부가설명"),
+    ]
+    
     var body: some View {
-        VStack {
-            Header()
-            
-            ZStack(alignment: .bottom) {
-                ScrollView(.vertical) {
-                    LazyVStack(spacing: 50) {
-                        ForEach(0..<10, id: \.self) { number in
-                            Cell(imageURL: nil, title: "\(number)")
-                        }
-                    }
+        ScrollView(.vertical) {
+            LazyVStack(spacing: 12) {
+                ForEach(recipes) { recipe in
+                    Cell(recipe: recipe)
                 }
-                
-                Button {
-                    
-                } label: {
-                    Text("메뉴 요청")
-                        .padding()
-                }
-                .buttonStyle(.roundedProminent())
             }
         }
-        .padding(.horizontal)
     }
 }
 
@@ -54,23 +48,50 @@ extension MainView {
     }
     
     struct Cell: View {
-        let imageURL: URL?
-        let title: String
+        @EnvironmentObject private var router: Router
+        
+        let recipe: Recipe
         
         var body: some View {
             VStack {
-                AsyncImage(url: imageURL) { image in
+                AsyncImage(url: recipe.imageURL) { image in
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(1.6, contentMode: .fill)
                 } placeholder: {
                     Rectangle()
-                        .frame(width: .infinity, height: 180)
-                        .clipShape(.buttonBorder)
+                        .fill(.gray.opacity(0.3))
+                        .aspectRatio(1.6, contentMode: .fill)
                 }
                 
-
-                Text(title)
+                HStack{
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(recipe.title)
+                        
+                        HStack(spacing: 8) {
+                            Text("\(recipe.servingsCount)인분")
+                            
+                            Circle()
+                                .frame(width: 4, height: 4)
+                            
+                            Text("\(recipe.cost)원")
+                            
+                            Circle()
+                                .frame(width: 4, height: 4)
+                            
+                            Text("\(recipe.cookingTime)분")
+                        }
+                        
+                        Text(recipe.ownerName)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(16)
+            }
+            .clipShape(.rect)
+            .onTapGesture {
+                router.route(to: .recipeGuideView(recipe))
             }
         }
     }
@@ -78,4 +99,5 @@ extension MainView {
 
 #Preview {
     MainView()
+        .environmentObject(Router())
 }
