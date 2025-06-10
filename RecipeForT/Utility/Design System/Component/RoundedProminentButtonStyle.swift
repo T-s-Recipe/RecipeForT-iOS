@@ -34,10 +34,9 @@ struct RoundedProminentButtonStyle: ButtonStyle {
                 configuration.label
             }
         }
-        .frame(maxWidth: .infinity)
         .foregroundStyle(foregroundColor)
         .background(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 5)
                 .fill(disabled ? .gray : backgroundColor)
         )
     }
