@@ -46,7 +46,7 @@ extension RecipeGuideView {
                         .aspectRatio(1.6, contentMode: .fill)
                 }
                 
-                Text(recipe.title)
+                Text(recipe.name)
                     .font(.title3)
                 
                 HStack(spacing: 8) {
@@ -63,9 +63,10 @@ extension RecipeGuideView {
                     Text("\(recipe.cookingTime)분")
                 }
                 
-                Text(recipe.ownerName)
+                // TODO: 레시피 작성자 정보 비동기로 가져오기
+                Text("홍길동")
                 
-                Text(recipe.additionalInformation)
+                Text(recipe.description)
                     .multilineTextAlignment(.center)
                 
                 Button {
@@ -86,6 +87,7 @@ extension RecipeGuideView {
 
 #Preview {
     NavigationStack {
-        RecipeGuideView(recipe: .mock())
+        RecipeGuideView(recipe: PreviewHelper.shared.mockRecipe)
+            .environmentObject(PreviewHelper.shared.router)
     }
 }
