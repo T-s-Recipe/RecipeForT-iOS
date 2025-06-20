@@ -15,10 +15,10 @@ final class PreviewHelper {
     lazy var mockRecipe = Recipe(
         id: 0,
         authorID: 123,
-        name: "브로콜리 두부 무침",
+        name: "Brocolli",
         imageURL: nil,
         servingsCount: 3,
-        cost: 4000,
+        cost: 4,
         cookingTime: 15,
         description: "기타 메모는 여기에.\n참고한 레시피 원본 출저 등의 내용 적으면 됨",
         ingredients: [mockIngredient]
