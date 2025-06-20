@@ -10,12 +10,7 @@ import SwiftUI
 struct MainView: View {
     @EnvironmentObject private var router: Router
     
-    @State private var recipes: [Recipe] = [
-        .init(id: 0, title: "브로콜리 두부 무침", imageURL: nil, servingsCount: 3, cost: 4000, cookingTime: 15, ownerName: "홍길동", additionalInformation: "부가설명"),
-        .init(id: 1, title: "김치찌개", imageURL: nil, servingsCount: 4, cost: 3000, cookingTime: 20, ownerName: "김영희", additionalInformation: "부가설명"),
-        .init(id: 2, title: "소고기 볶음밥", imageURL: nil, servingsCount: 2, cost: 5000, cookingTime: 30, ownerName: "이영수", additionalInformation: "부가설명"),
-        .init(id: 3, title: "오이소박이", imageURL: nil, servingsCount: 1, cost: 2000, cookingTime: 10, ownerName: "최민영", additionalInformation: "부가설명"),
-    ]
+    @State private var recipes: [Recipe] = []
     
     var body: some View {
         ScrollView(.vertical) {
@@ -66,7 +61,7 @@ extension MainView {
                 
                 HStack{
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(recipe.title)
+                        Text(recipe.name)
                         
                         HStack(spacing: 8) {
                             Text("\(recipe.servingsCount)인분")
@@ -82,7 +77,7 @@ extension MainView {
                             Text("\(recipe.cookingTime)분")
                         }
                         
-                        Text(recipe.ownerName)
+//                        Text(recipe.authorID)
                     }
                     
                     Spacer()

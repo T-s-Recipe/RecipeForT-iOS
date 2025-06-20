@@ -22,7 +22,7 @@ struct Recipe: Identifiable {
     /// 조리비용
     let cost: Decimal
     /// 조리시간(분)
-    let cookingTime: TimeInterval
+    let cookingTime: UInt8
     /// 레시피에 대한 설명
     let description: String
     /// 재료 목록

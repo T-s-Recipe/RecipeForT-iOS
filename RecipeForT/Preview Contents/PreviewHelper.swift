@@ -19,7 +19,7 @@ final class PreviewHelper {
         imageURL: nil,
         servingsCount: 3,
         cost: 4000,
-        cookingTime: .minutes(15),
+        cookingTime: 15,
         description: "기타 메모는 여기에.\n참고한 레시피 원본 출저 등의 내용 적으면 됨",
         ingredients: [mockIngredient]
     )

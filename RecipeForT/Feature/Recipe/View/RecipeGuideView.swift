@@ -15,17 +15,18 @@ struct RecipeGuideView: View {
     var body: some View {
         ScrollView(.vertical) {
             RecipeInformationSection(recipe: recipe)
+            
+            Rectangle()
+                .fill(.gray.opacity(0.3))
+                .padding(.vertical)
         }
+        .navigationBarBackButtonHidden()
         .toolbar {
-//            ToolbarItem(placement: .topBarLeading) {
-//                Button {
-//                    
-//                } label: {
-//                    Image(systemName: "arrow.left")
-//                }
-//            }
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton()
+            }
         }
-        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarBackground(.thinMaterial, for: .navigationBar)
     }
 }
 
@@ -47,7 +48,7 @@ extension RecipeGuideView {
                 }
                 
                 Text(recipe.name)
-                    .font(.title3)
+                    .font(.headline)
                 
                 HStack(spacing: 8) {
                     Text("\(recipe.servingsCount)인분")
@@ -62,25 +63,22 @@ extension RecipeGuideView {
                     
                     Text("\(recipe.cookingTime)분")
                 }
+                .foregroundStyle(.gray)
                 
                 // TODO: 레시피 작성자 정보 비동기로 가져오기
                 Text("홍길동")
+                    .foregroundStyle(.gray)
                 
                 Text(recipe.description)
                     .multilineTextAlignment(.center)
-                
-                Button {
-                    // TODO: 필독! 버튼
-                } label: {
-                    Text("필독!")
-                        .font(.headline)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 24)
-                }
-                .buttonStyle(.roundedProminent(
-                    background: .black
-                ))
+                    .foregroundStyle(.gray)
             }
+        }
+    }
+    
+    struct IngredientSection: View {
+        var body: some View {
+            
         }
     }
 }
