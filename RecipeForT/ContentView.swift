@@ -21,6 +21,12 @@ struct ContentView: View {
                         .environment(\.symbolVariants, .none)
                 }
                 
+                Tab(value: TabSelection.search) {
+                    router.view(to: .searchView)
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                
                 Tab(value: TabSelection.recipeUpload) {
                     router.view(to: .recipeUploadView)
                 } label: {
@@ -53,6 +59,7 @@ struct ContentView: View {
 extension ContentView {
     enum TabSelection: Hashable {
         case main
+        case search
         case recipeUpload
         case myPage
     }
