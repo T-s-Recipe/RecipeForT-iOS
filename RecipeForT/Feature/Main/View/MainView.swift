@@ -10,15 +10,23 @@ import SwiftUI
 struct MainView: View {
     @EnvironmentObject private var router: Router
     
-    @State private var recipes: [Recipe] = []
+    @State private var recipes: [Recipe] = [
+        PreviewHelper.shared.mockRecipe
+    ]
+    
+    private let column: [GridItem] = [
+        .init(.adaptive(minimum: 120, maximum: .infinity)),
+        .init(.adaptive(minimum: 120, maximum: .infinity))
+    ]
     
     var body: some View {
         ScrollView(.vertical) {
-            LazyVStack(spacing: 12) {
+            LazyVGrid(columns: column, spacing: 8) {
                 ForEach(recipes) { recipe in
                     Cell(recipe: recipe)
                 }
             }
+            .padding(.horizontal)
         }
     }
 }
@@ -48,41 +56,44 @@ extension MainView {
         let recipe: Recipe
         
         var body: some View {
-            VStack {
+            VStack(spacing: 12) {
                 AsyncImage(url: recipe.imageURL) { image in
                     image
                         .resizable()
-                        .aspectRatio(1.6, contentMode: .fill)
+                        .aspectRatio(1, contentMode: .fill)
                 } placeholder: {
                     Rectangle()
                         .fill(.gray.opacity(0.3))
-                        .aspectRatio(1.6, contentMode: .fill)
+                        .aspectRatio(1, contentMode: .fill)
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 5))
                 
                 HStack{
                     VStack(alignment: .leading, spacing: 4) {
                         Text(recipe.name)
+                            .font(.headline)
                         
                         HStack(spacing: 8) {
-                            Text("\(recipe.servingsCount)인분")
+                            Text("\(recipe.servingsCount)serv")
                             
                             Circle()
                                 .frame(width: 4, height: 4)
                             
-                            Text("\(recipe.cost)원")
+                            Text("$\(recipe.cost)")
                             
                             Circle()
                                 .frame(width: 4, height: 4)
                             
-                            Text("\(recipe.cookingTime)분")
+                            Text("\(recipe.cookingTime)min")
                         }
+                        .font(.subheadline)
                         
-//                        Text(recipe.authorID)
+                        Text("Author Name")
+                            .font(.subheadline)
                     }
                     
                     Spacer()
                 }
-                .padding(16)
             }
             .clipShape(.rect)
             .onTapGesture {
@@ -93,6 +104,5 @@ extension MainView {
 }
 
 #Preview {
-    MainView()
-        .environmentObject(Router())
+    ContentView()
 }
