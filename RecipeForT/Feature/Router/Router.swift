@@ -1,8 +1,8 @@
 //
-//  ContentViewModel.swift
+//  Router.swift
 //  RecipeForT
 //
-//  Created by Swain Yun on 6/10/25.
+//  Created by Swain Yun on 6/20/25.
 //
 
 import SwiftUI
@@ -41,6 +41,7 @@ enum PresentingType {
 
 enum Route: Routable {
     case mainView
+    case searchView
     case recipeUploadView
     case myPageView
     case recipeGuideView(Recipe)
@@ -48,6 +49,7 @@ enum Route: Routable {
     var presentingType: PresentingType {
         switch self {
         case .mainView: .push
+        case .searchView: .push
         case .recipeUploadView: .push
         case .myPageView: .push
         case .recipeGuideView: .push
@@ -57,6 +59,7 @@ enum Route: Routable {
     @ViewBuilder func view(with router: Router) -> some View {
         switch self {
         case .mainView: MainView()
+        case .searchView: Text("검색 화면")
         case .recipeUploadView: Text("레시피 업로드 화면")
         case .myPageView: Text("마이페이지 화면")
         case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe)
