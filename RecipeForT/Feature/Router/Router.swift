@@ -46,7 +46,6 @@ enum Route: Routable {
     case myPageView
     case recipeGuideView(Recipe)
     case loginFullScreenCover
-    case loginView(LoginView.SectionType)
     
     var presentingType: PresentingType {
         switch self {
@@ -56,7 +55,6 @@ enum Route: Routable {
         case .myPageView: .push
         case .recipeGuideView: .push
         case .loginFullScreenCover: .fullScreenCover
-        case .loginView: .push
         }
     }
     
@@ -68,7 +66,6 @@ enum Route: Routable {
         case .myPageView: Text("마이페이지 화면")
         case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe)
         case .loginFullScreenCover: LoginFullScreenCover()
-        case .loginView(let sectionType): LoginView(sectionType: sectionType)
         }
     }
 }
