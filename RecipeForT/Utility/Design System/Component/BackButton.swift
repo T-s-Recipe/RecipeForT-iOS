@@ -16,12 +16,14 @@ struct BackButton: View {
         } label: {
             Image(systemName: "arrow.left")
                 .resizable()
-                .frame(width: 24, height: 24)
+                .frame(width: 14, height: 14)
         }
+        .tint(.black)
+        .padding(10)
     }
 }
 
 #Preview {
     BackButton()
-        .background(.black)
+        .border(.red)
 }
