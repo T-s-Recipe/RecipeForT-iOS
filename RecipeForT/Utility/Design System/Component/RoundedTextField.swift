@@ -7,61 +7,54 @@
 
 import SwiftUI
 
-struct RoundedTextFieldStyle: TextFieldStyle {
-    let lineColor: Color
-    let disabled: Bool
-    let font: Font
-    
-    func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .foregroundStyle(.gray)
-            .frame(minHeight: 44)
-            .overlay(alignment: .center) {
-                RoundedRectangle(cornerRadius: 5)
-                    .strokeBorder(lineColor)
-            }
-            .background {
-                RoundedRectangle(cornerRadius: 5)
-                    .foregroundStyle(disabled ? .gray : .clear)
-                    .opacity(disabled ? 0.4 : 1.0)
-            }
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
-            .replaceDisabled()
-    }
-}
-
 struct RoundedTextField: View {
+    @Binding var text: String
+    
+    private var isFocused: FocusState<Bool>.Binding
     private let titleKey: String
-    private let text: Binding<String>
-    private let prompt: Text
-    private let axis: Axis
-    private let textFieldStyle: RoundedTextFieldStyle
     
     init(
-        _ titleKey: String,
+        _ prompt: String,
         text: Binding<String>,
-        font: Font = .body,
-        disabled: Bool = false,
-        lineColor: Color = .accentColor,
-        axis: Axis = .horizontal
+        _ isFocused: FocusState<Bool>.Binding
     ) {
-        self.titleKey = titleKey
-        self.text = text
-        self.textFieldStyle = RoundedTextFieldStyle(lineColor: lineColor, disabled: disabled, font: font)
-        self.prompt = Text(titleKey).foregroundStyle(.gray)
-        self.axis = axis
+        self.titleKey = prompt
+        self._text = text
+        self.isFocused = isFocused
     }
     
     var body: some View {
-        TextField(titleKey, text: text, prompt: prompt, axis: axis)
-            .textFieldStyle(textFieldStyle)
+        HStack(spacing: 12) {
+            textFieldArea
+                .padding(.vertical, 8)
+            
+            if text.isEmpty == false {
+                removeButton
+            }
+        }
+        .padding(12)
+        .frame(height: 44)
+        .background(
+            RoundedRectangle(cornerRadius: 5)
+                .fill(.clear)
+                .strokeBorder(isFocused.wrappedValue ? .black : .gray)
+        )
     }
     
-    func secured() -> some View {
-        SecureField(titleKey, text: text, prompt: prompt)
-            .textFieldStyle(textFieldStyle)
+    private var textFieldArea: some View {
+        TextField(titleKey, text: $text)
+            .focused(isFocused)
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.never)
+    }
+    
+    private var removeButton: some View {
+        Button {
+            text.removeAll()
+            isFocused.wrappedValue = false
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.gray)
+        }
     }
 }
