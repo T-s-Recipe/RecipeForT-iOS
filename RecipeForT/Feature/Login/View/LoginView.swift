@@ -2,47 +2,37 @@
 //  LoginView.swift
 //  RecipeForT
 //
-//  Created by Swain Yun on 6/20/25.
+//  Created by Swain Yun on 6/22/25.
 //
 
 import SwiftUI
 import AuthenticationServices
 
 struct LoginView: View {
-    @EnvironmentObject private var router: Router
-    @State private var sectionType: SectionType = .signUp
+    @State private var sectionType: SectionType
+    
+    init(sectionType: SectionType) {
+        self.sectionType = sectionType
+    }
     
     var body: some View {
         VStack {
-            HStack {
-                Spacer()
+            ScrollView(.vertical) {
+                Header(sectionType: sectionType)
                 
-                Button {
-                    router.dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                }
-                .padding([.top, .trailing], )
-                .tint(.black)
+                ContentSection(sectionType: $sectionType)
             }
+            .padding(.horizontal)
             
-            Spacer()
-            
-            Group {
-                switch sectionType {
-                case .login:
-                    LoginSection(sectionType: $sectionType)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                case .signIn:
-                    SignInSection(sectionType: $sectionType)
-                        .transition(.scale.combined(with: .opacity))
-                case .signUp:
-                    SignUpSection(sectionType: $sectionType)
-                        .transition(.scale.combined(with: .opacity))
-                }
+            if sectionType == .signUp {
+                Footer()
             }
-            
-            Spacer()
+        }
+        .navigationBarBackButtonHidden()
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton()
+            }
         }
     }
 }
@@ -50,145 +40,59 @@ struct LoginView: View {
 // MARK: - Nested Types
 extension LoginView {
     enum SectionType {
-        case login
-        case signIn
-        case signUp
+        case signIn, signUp
+    }
+    
+    enum SignUpStep {
+        case email, userID
     }
 }
 
 // MARK: - Subviews
-struct LoginSection: View {
-    @Binding var sectionType: LoginView.SectionType
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            Image(.logo)
-                .padding(.bottom, 12)
-            
-            Button {
-                withAnimation { sectionType = .signIn }
-            } label: {
-                Text("Log in")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical)
-                    .background(.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 5))
+extension LoginView {
+    struct Header: View {
+        let sectionType: SectionType
+        
+        var body: some View {
+            VStack(spacing: 8) {
+                Text(sectionType == .signIn ? "Log in" : "Sign up for free")
+                    .font(.title.weight(.medium))
+                
+                Text(sectionType == .signIn ? "Welcome back !" : "T's recipe")
             }
-            .tint(.white)
-            
-            Button {
-                withAnimation { sectionType = .signUp }
-            } label: {
-                Text("Sign up for free")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(.white)
-                            .strokeBorder(.gray)
-                    )
-            }
-            .tint(.black)
+            .frame(height: 150)
         }
-        .padding(.horizontal)
     }
-}
-
-struct SignInSection: View {
-    @Binding var sectionType: LoginView.SectionType
-    @FocusState private var isEmailTextFieldFocused: Bool
-    @State private var emailTextField: String = String()
     
-    var body: some View {
-        VStack(spacing: 12) {
-            Text("Welcome back")
-                .font(.title.weight(.medium))
-                .padding(.bottom, 12)
-            
-            SignInWithAppleButton(.continue) { request in
-                
-            } onCompletion: { result in
-                
-            }
-            .signInWithAppleButtonStyle(.whiteOutline)
-            .frame(height: 44)
-
-            Text("OR")
-            
-            HStack {
-                Text("Email address")
-                    .foregroundStyle(.gray)
-                
-                Spacer()
-            }
-            
-            RoundedTextField("(e.g) tsrecipe@gmail.com", text: $emailTextField, $isEmailTextFieldFocused)
-            
-            Button {
-                
-            } label: {
-                Text("Continue")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical)
-                    .background(.gray)
-                    .clipShape(RoundedRectangle(cornerRadius: 5))
-            }
-            .tint(.white)
-            
-            HStack {
-                Text("Don't have an account?")
-                
-                Button {
-                    changeSectionToSignUp()
-                } label: {
-                    Text("Sign up")
-                }
-            }
+    struct ContentSection: View {
+        @Binding var sectionType: SectionType
+        @FocusState private var isFocused: Bool
+        @State private var signUpStep: SignUpStep = .email
+        @State private var text = String()
+        
+        init(sectionType: Binding<SectionType>) {
+            self._sectionType = sectionType
         }
-        .padding(.horizontal)
-    }
-    
-    private func changeSectionToSignUp() {
-        isEmailTextFieldFocused = false
-        withAnimation { sectionType = .signUp }
-    }
-}
-
-struct SignUpSection: View {
-    @Binding var sectionType: LoginView.SectionType
-    @FocusState private var isFocused: Bool
-    @State private var signUpStep: SignUpStep = .email
-    @State private var textField: String = String()
-    
-    var body: some View {
-        VStack {
-            Header(signUpStep: $signUpStep)
-            
-            Spacer()
-            
+        
+        var body: some View {
             VStack(spacing: 12) {
-                if signUpStep == .email {
-                    VStack(spacing: 12) {
-                        SignInWithAppleButton(.continue) { request in
-                            
-                        } onCompletion: { result in
-                            
-                        }
-                        .signInWithAppleButtonStyle(.whiteOutline)
-                        .frame(height: 44)
-                        
-                        SignInWithAppleButton(.continue) { request in
-                            
-                        } onCompletion: { result in
-                            
-                        }
-                        .signInWithAppleButtonStyle(.whiteOutline)
-                        .frame(height: 44)
-                        
-                        Text("OR")
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                SignInWithAppleButton(.continue) { request in
+                    
+                } onCompletion: { result in
+                    
                 }
+                .signInWithAppleButtonStyle(.whiteOutline)
+                .frame(height: 44)
+                
+                SignInWithAppleButton(.continue) { request in
+                    
+                } onCompletion: { result in
+                    
+                }
+                .signInWithAppleButtonStyle(.whiteOutline)
+                .frame(height: 44)
+                
+                Text("OR")
                 
                 HStack {
                     Text(signUpStep == .email ? "Email address" : "User ID")
@@ -197,16 +101,10 @@ struct SignUpSection: View {
                     Spacer()
                 }
                 
-                RoundedTextField("(e.g) tsrecipe@gmail.com", text: $textField, $isFocused)
+                RoundedTextField("(e.g) tsrecipe@gmail.com", text: $text, $isFocused)
                 
                 Button {
-                    withAnimation {
-                        if signUpStep == .email {
-                            signUpStep = .userID
-                        } else {
-                            signUpStep = .email
-                        }
-                    }
+                    proceedSignUpStep()
                 } label: {
                     Text("Continue")
                         .frame(maxWidth: .infinity)
@@ -217,60 +115,23 @@ struct SignUpSection: View {
                 .tint(.white)
                 
                 HStack {
-                    Text("Already have an account?")
+                    Text(sectionType == .signIn ? "Don't have an account?" : "Already have an account?")
                     
                     Button {
-                        changeSectionToSignIn()
+                        toggleSectionType()
                     } label: {
-                        Text("Log in")
+                        Text(sectionType == .signIn ? "Sign up" : "Log in")
                     }
                 }
             }
-            
-            Spacer()
-            
-            Footer()
         }
-        .padding(.horizontal)
-    }
-    
-    private func changeSectionToSignIn() {
-        isFocused = false
-        withAnimation { sectionType = .signIn }
-    }
-}
-
-// MARK: - SignUpSection + Nested Types
-extension SignUpSection {
-    enum SignUpStep {
-        case email, userID
-    }
-}
-
-// MARK: - SignUpSection + Subviews
-extension SignUpSection {
-    struct Header: View {
-        @Binding var signUpStep: SignUpStep
         
-        var body: some View {
-            VStack(spacing: 12) {
-                Image(.logo)
-                
-                Text("Create an account")
-                    .font(.title.weight(.medium))
-                
-                HStack{
-                    Circle()
-                        .frame(width: 8, height: 8)
-                        .foregroundStyle(signUpStep == .email ? .black : .gray)
-                    
-                    Circle()
-                        .frame(width: 8, height: 8)
-                        .foregroundStyle(signUpStep == .userID ? .black : .gray)
-                }
-                .padding(.top, 8)
-            }
-            .padding(.top)
+        private func toggleSectionType() {
+            sectionType = sectionType == .signIn ? .signUp : .signIn
+        }
+        
+        private func proceedSignUpStep() {
+            signUpStep = signUpStep == .email ? .userID : .email
         }
     }
     
@@ -295,6 +156,8 @@ extension SignUpSection {
 }
 
 #Preview {
-    LoginView()
-        .environmentObject(Router())
+    NavigationStack {
+        LoginView(sectionType: .signIn)
+    }
+    .environmentObject(Router())
 }
