@@ -15,7 +15,7 @@ struct EditRecipeView: View {
                 
                 thickDivider
                 
-                EngredientsInfo()
+                IngredientsInfo()
                 
                 thickDivider
             }
@@ -127,10 +127,12 @@ extension EditRecipeView {
         }
     }
     
-    struct EngredientsInfo: View {
+    struct IngredientsInfo: View {
+        @State private var ingredients: [Ingredient] = []
+        
         var body: some View {
             VStack(spacing: 12) {
-                Text("Engredients")
+                Text("Ingredients")
                     .font(.title3.bold())
                 
                 Text("Select one of the following measurement units.")
@@ -151,7 +153,7 @@ extension EditRecipeView {
                         
                         Image(systemName: "plus.circle")
                         
-                        Text("Add engredient")
+                        Text("Add ingredient")
                         
                         Spacer()
                     }
