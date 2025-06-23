@@ -90,13 +90,13 @@ extension EditRecipeView {
                     }
                     
                     VStack(alignment: .leading) {
-                        Text("Costs")
+                        Text("Cost")
                         
                         textField("Cooking cost", text: $cost, equals: .cost)
                     }
                     
                     VStack(alignment: .leading) {
-                        Text("Times(min)")
+                        Text("Time(min)")
                         
                         textField("Total cooking time", text: $time, equals: .time)
                     }
