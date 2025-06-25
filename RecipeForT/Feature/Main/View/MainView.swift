@@ -97,8 +97,7 @@ extension MainView {
             }
             .clipShape(.rect)
             .onTapGesture {
-//                router.route(to: .recipeGuideView(recipe))
-                router.route(to: .loginFullScreenCover)
+                router.route(to: .recipeGuideView(recipe))
             }
         }
     }
