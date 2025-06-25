@@ -28,7 +28,7 @@ struct ContentView: View {
                 }
                 
                 Tab(value: TabSelection.recipeUpload) {
-                    router.view(to: .recipeUploadView)
+                    router.view(to: .editRecipeView)
                 } label: {
                     Image(systemName: "plus.circle")
                         .environment(\.symbolVariants, .none)
