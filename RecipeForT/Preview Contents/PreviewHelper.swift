@@ -26,7 +26,7 @@ final class PreviewHelper {
     
     lazy var mockIngredient = Ingredient(
         name: "브로콜리",
-        unit: .count(2)
+        units: [.init(measurement: .quantity, ammount: 2)]
     )
     
     private init() {}
