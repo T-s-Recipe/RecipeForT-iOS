@@ -42,30 +42,30 @@ enum PresentingType {
 enum Route: Routable {
     case mainView
     case searchView
-    case recipeUploadView
+    case editRecipeView
     case myPageView
     case recipeGuideView(Recipe)
-    case loginFullScreenCover
+    case loginView(LoginView.SectionType)
     
     var presentingType: PresentingType {
         switch self {
         case .mainView: .push
         case .searchView: .push
-        case .recipeUploadView: .push
+        case .editRecipeView: .push
         case .myPageView: .push
         case .recipeGuideView: .push
-        case .loginFullScreenCover: .fullScreenCover
+        case .loginView: .push
         }
     }
     
     @ViewBuilder func view(with router: Router) -> some View {
         switch self {
         case .mainView: MainView()
-        case .searchView: Text("검색 화면")
-        case .recipeUploadView: Text("레시피 업로드 화면")
+        case .searchView: SearchingView()
+        case .editRecipeView: EditRecipeView()
         case .myPageView: Text("마이페이지 화면")
         case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe)
-        case .loginFullScreenCover: LoginFullScreenCover()
+        case .loginView(let sectionType): LoginView(sectionType: sectionType)
         }
     }
 }
