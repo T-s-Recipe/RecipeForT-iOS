@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct EditRecipeView: View {
+    @EnvironmentObject var router: Router
     @State private var editor: RecipeEditor
     
     init(recipe: Recipe?) {
@@ -16,24 +17,57 @@ struct EditRecipeView: View {
     
     var body: some View {
         ZStack {
-            ScrollView(.vertical) {
-                @Bindable var editor = editor
+            VStack {
+                navigationHeader
                 
-                RecipeBaseInfo(
-                    title: $editor.title,
-                    servings: $editor.servings,
-                    cost: $editor.cost,
-                    time: $editor.time,
-                    notes: $editor.notes
-                )
-                
-                thickDivider
-                
-                IngredientsInfo(ingredients: $editor.ingredients)
-                
-                thickDivider
+                ScrollView(.vertical) {
+                    @Bindable var editor = editor
+                    
+                    LazyVStack {
+                        RecipeBaseInfo(
+                            title: $editor.title,
+                            servings: $editor.servings,
+                            cost: $editor.cost,
+                            time: $editor.time,
+                            notes: $editor.notes
+                        )
+                        
+                        thickDivider
+                        
+                        IngredientsInfo(ingredients: $editor.ingredients)
+                        
+                        thickDivider
+                    }
+                }
             }
         }
+    }
+    
+    @ViewBuilder private var navigationHeader: some View {
+        HStack {
+            Button {
+                router.dismiss()
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .tint(.black)
+            
+            Spacer()
+            
+            Text("Recipe")
+            
+            Spacer()
+            
+            Button {
+                // TODO: 레시피 등록 기능
+            } label: {
+                Text("등록")
+            }
+            .tint(.black)
+        }
+        .padding()
+        
+        Divider()
     }
     
     private var thickDivider: some View {
@@ -306,4 +340,5 @@ extension EditRecipeView {
 
 #Preview {
     EditRecipeView(recipe: nil)
+        .environmentObject(Router())
 }

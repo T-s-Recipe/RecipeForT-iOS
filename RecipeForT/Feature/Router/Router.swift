@@ -42,7 +42,7 @@ enum PresentingType {
 enum Route: Routable {
     case mainView
     case searchView
-    case editRecipeView
+    case editRecipeView(recipe: Recipe?)
     case myPageView
     case recipeGuideView(Recipe)
     case loginView(LoginView.SectionType)
@@ -51,7 +51,7 @@ enum Route: Routable {
         switch self {
         case .mainView: .push
         case .searchView: .push
-        case .editRecipeView: .push
+        case .editRecipeView: .fullScreenCover
         case .myPageView: .push
         case .recipeGuideView: .push
         case .loginView: .push
@@ -62,7 +62,7 @@ enum Route: Routable {
         switch self {
         case .mainView: MainView()
         case .searchView: SearchingView()
-        case .editRecipeView: EditRecipeView()
+        case .editRecipeView(let recipe): EditRecipeView(recipe: recipe)
         case .myPageView: Text("마이페이지 화면")
         case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe)
         case .loginView(let sectionType): LoginView(sectionType: sectionType)

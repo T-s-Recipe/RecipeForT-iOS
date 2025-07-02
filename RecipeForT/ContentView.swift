@@ -7,13 +7,32 @@
 
 import SwiftUI
 
+@Observable
+final class TabSelector {
+    enum TabSelection: Hashable {
+        case main
+        case search
+        case recipeUpload
+        case myPage
+    }
+    
+    var currentTab: TabSelection = .main
+    @ObservationIgnored var previousTab: TabSelection = .main
+    
+    func backToPreviousTab() {
+        currentTab = previousTab
+    }
+}
+
 struct ContentView: View {
     @StateObject private var router = Router()
-    @State private var selection: TabSelection = .main
+    @State private var tabSelector = TabSelector()
     
     var body: some View {
         NavigationStack(path: $router.path) {
-            TabView(selection: $selection) {
+            @Bindable var tabSelector = tabSelector
+            
+            TabView(selection: $tabSelector.currentTab) {
                 Tab(value: TabSelection.main) {
                     router.view(to: .mainView)
                 } label: {
@@ -28,7 +47,7 @@ struct ContentView: View {
                 }
                 
                 Tab(value: TabSelection.recipeUpload) {
-                    router.view(to: .editRecipeView)
+                    EmptyView()
                 } label: {
                     Image(systemName: "plus.circle")
                         .environment(\.symbolVariants, .none)
@@ -47,22 +66,25 @@ struct ContentView: View {
             .sheet(item: $router.sheet) { destination in
                 router.view(to: destination)
             }
-            .fullScreenCover(item: $router.fullScreenCover) { destination in
+            .fullScreenCover(item: $router.fullScreenCover) {
+                guard case .recipeUpload = tabSelector.currentTab else { return }
+                tabSelector.backToPreviousTab()
+            } content: { destination in
                 router.view(to: destination)
+            }
+            .onChange(of: tabSelector.currentTab) { previous, current in
+                tabSelector.previousTab = previous
+                
+                guard case .recipeUpload = current else { return }
+                router.route(to: .editRecipeView(recipe: nil))
             }
         }
         .environmentObject(router)
     }
 }
 
-// MARK: - Nested Types
 extension ContentView {
-    enum TabSelection: Hashable {
-        case main
-        case search
-        case recipeUpload
-        case myPage
-    }
+    typealias TabSelection = TabSelector.TabSelection
 }
 
 #Preview {
