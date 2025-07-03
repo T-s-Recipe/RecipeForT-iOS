@@ -16,10 +16,14 @@ struct SearchingView: View {
                 print("OnSubmitted")
             }
             
-            ScrollView(.vertical) {
-                Text("WIP")
+            // TODO: 검색 결과가 없을 경우
+            if true {
+                UnavailableView()
+            } else {
+                ScrollView(.vertical) {
+                    Text("WIP")
+                }
             }
-            .border(.red)
         }
     }
 }
@@ -78,6 +82,36 @@ extension SearchingView {
         
         private func releaseFocus() {
             isFocused = false
+        }
+    }
+    
+    struct UnavailableView: View {
+        var body: some View {
+            VStack(spacing: 20) {
+                Spacer()
+                
+                Image(systemName: "exclamationmark.magnifyingglass")
+                    .resizable()
+                    .frame(width: 52, height: 52)
+                    .foregroundStyle(.gray)
+                
+                Text("No Result Found")
+                    .fontWeight(.bold)
+                
+                Text("Can't find what you're looking for?\nJust let us know and we'll add it for you!")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.gray)
+                
+                Button {
+                    // TODO: 무슨 비즈니스를 수행하는지 확인 필요
+                } label: {
+                    Text("Request this recipe!")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.black)
+                
+                Spacer()
+            }
         }
     }
 }
