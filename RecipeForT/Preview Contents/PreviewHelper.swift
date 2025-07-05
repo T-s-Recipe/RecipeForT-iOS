@@ -21,13 +21,14 @@ final class PreviewHelper {
         cost: 4,
         cookingTime: 15,
         description: "기타 메모는 여기에.\n참고한 레시피 원본 출저 등의 내용 적으면 됨",
-        ingredients: [mockIngredient]
+        ingredients: mockIngredients
     )
     
-    lazy var mockIngredient = Ingredient(
-        name: "브로콜리",
-        units: [.init(measurement: .quantity, ammount: 2)]
-    )
+    lazy var mockIngredients: [Ingredient] = [
+        .init(name: "브로콜리", units: .init(quantity: 1, tablespoon: 2, teaspoon: 3, cup: 4, gram: 300, milliliters: 324, ounce: 432)),
+        .init(name: "Tofu", units: .init()),
+        .init(name: "chopped onion", units: .init())
+    ]
     
     private init() {}
 }
