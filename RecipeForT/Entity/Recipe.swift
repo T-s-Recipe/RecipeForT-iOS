@@ -54,52 +54,64 @@ struct Recipe: Identifiable {
 }
 
 /// 음식 재료
-struct Ingredient {
+struct Ingredient: Identifiable {
+    let id: UUID = UUID()
     /// 재료 이름
-    let name: String
+    var name: String
     /// 계량 단위
-    var units: [IngredientUnit]
+    var units: MeasurementUnitDataSource
 }
 
-struct IngredientUnit {
-    let measurement: MeasurementUnit
-    let ammount: Double
+struct MeasurementUnitDataSource {
+    var quantity: Decimal?
+    var tablespoon: Decimal?
+    var teaspoon: Decimal?
+    var cup: Decimal?
+    var gram: Decimal?
+    var milliliters: Decimal?
+    var ounce: Decimal?
+    
+    subscript(_ unit: MeasurementUnit) -> Decimal? {
+        get {
+            switch unit {
+            case .quantity: quantity
+            case .tablespoon: tablespoon
+            case .teaspoon: teaspoon
+            case .cup: cup
+            case .gram: gram
+            case .milliliters: milliliters
+            case .ounce: ounce
+            }
+        }
+        
+        set {
+            switch unit {
+            case .quantity: self.quantity = newValue
+            case .tablespoon: self.tablespoon = newValue
+            case .teaspoon: self.teaspoon = newValue
+            case .cup: self.cup = newValue
+            case .gram: self.gram = newValue
+            case .milliliters: self.milliliters = newValue
+            case .ounce: self.ounce = newValue
+            }
+        }
+    }
 }
 
 /// 계량 단위
 enum MeasurementUnit: CaseIterable {
-    /// 테이블스푼
-    ///
-    /// 주로 액체나 반고체 재료(예: 기름, 버터)를 계량
-    ///
-    /// 1 Tbsp는 약 15ml
-    case tablespoon
-    /// 수량
-    ///
-    /// 특정 단위 없이 개수나 양을 나타낼 때 사용
     case quantity
-    /// 컵
-    ///
-    /// 고체(밀가루), 액체(물) 모두 계량 가능한 단위
-    ///
-    /// 1 Cup은 약 240ml, 8 fl oz
+    case tablespoon
+    case teaspoon
     case cup
-    /// 그램
-    ///
-    /// 질량 단위로, 정밀한 계량에 사용하며 주로 고체 재료에 적합
     case gram
-    /// 밀리미터
-    ///
-    /// 부피 단위로, 액체 재료를 계량할 때 사용
     case milliliters
-    /// 온스
-    ///
-    /// 미국식 무게 또는 부피 단위로 문맥에 따라 fl oz로 액체를, 그냥 oz로 고체를 나타냄
     case ounce
     
     var short: String {
         switch self {
         case .tablespoon: return "Tbsp"
+        case .teaspoon: return "Tsp"
         case .quantity: return "Qty"
         case .cup: return "Cup"
         case .gram: return "g"
