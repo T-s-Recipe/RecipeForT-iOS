@@ -20,13 +20,14 @@ struct RecipeGuideView: View {
                 .fill(.gray.opacity(0.3))
                 .padding(.vertical)
         }
+        .ignoresSafeArea(edges: .top)
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
             }
         }
-        .toolbarBackground(.thinMaterial, for: .navigationBar)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
     }
 }
 
