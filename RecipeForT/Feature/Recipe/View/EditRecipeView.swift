@@ -25,16 +25,16 @@ struct EditRecipeView: View {
                     
                     LazyVStack {
                         RecipeBaseInfo(
-                            title: $editor.title,
-                            servings: $editor.servings,
-                            cost: $editor.cost,
-                            time: $editor.time,
-                            notes: $editor.notes
+                            title: $editor.titleText,
+                            servings: $editor.servingsText,
+                            cost: $editor.costText,
+                            time: $editor.timeText,
+                            notes: $editor.notesText
                         )
                         
                         thickDivider
                         
-                        IngredientsInfo(ingredients: $editor.ingredients)
+                        IngredientsInfo(editor: editor)
                         
                         thickDivider
                     }
@@ -190,155 +190,152 @@ extension EditRecipeView {
     }
     
     struct IngredientsInfo: View {
-        @Binding var ingredients: [Ingredient]
-        
-        init(
-            ingredients: Binding<[Ingredient]>
-        ) {
-            self._ingredients = ingredients
-        }
+        @Bindable var editor: RecipeEditor
         
         var body: some View {
             VStack(spacing: 12) {
                 Text("Ingredients")
                     .font(.title3.bold())
+                    .padding(.top, 16)
                 
-                Text("Select one of the following measurement units.")
-                    .foregroundStyle(.gray)
-                
-                ForEach(0..<ingredients.count, id: \.self) { index in
-                    IngredientCell(ingredient: $ingredients[index]) {
-                        ingredients.remove(at: index)
+                HStack(spacing: 12) {
+                    Button {
+                        editor.decreaseServingsCount()
+                    } label: {
+                        Image(systemName: "minus")
                     }
+                    .background(
+                        Circle()
+                            .fill(.gray.opacity(0.3))
+                            .frame(width: 24, height: 24)
+                    )
+                    .tint(.black)
+                    
+                    Text("\(editor.servings) \(editor.servings > 1 ? "Servings" : "Serving")")
+                        .monospacedDigit()
+
+                    Button {
+                        editor.increaseServingsCount()
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .background(
+                        Circle()
+                            .fill(.gray.opacity(0.3))
+                            .frame(width: 24, height: 24)
+                    )
+                    .tint(.black)
                 }
                 
-                Button {
-                    ingredients.append(Ingredient(name: "", units: []))
-                } label: {
-                    HStack {
-                        Spacer()
-                        
-                        Image(systemName: "plus.circle")
-                        
-                        Text("Add ingredient")
-                        
-                        Spacer()
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyVStack {
+                        ForEach($editor.ingredients) { ingredient in
+                            VStack {
+                                IngredientRow(ingredient: ingredient) {
+                                    editor.removeIngredient(ingredient.wrappedValue)
+                                }
+                                
+                                if editor.ingredients.count > 1 && editor.ingredients.last?.id != ingredient.id {
+                                    Divider()
+                                        .padding(.vertical)
+                                }
+                            }
+                            
+                        }
                     }
-                    .padding()
+                }
+                .contentMargins(16)
+                
+                HStack {
+                    Button {
+                        editor.addIngredient()
+                    } label: {
+                        Label("Add Ingredient", systemImage: "plus.circle")
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(.gray)
+                            )
+                    }
+                    .tint(.white)
+                    .padding([.horizontal, .bottom])
+                }
+            }
+        }
+    }
+    
+    struct IngredientRow: View {
+        @Binding var ingredient: Ingredient
+        @State private var formatter = DecimalFormatter()
+        
+        private let maxNameLength: Int = 20
+        
+        let onDelete: () -> Void
+        
+        var body: some View {
+            HStack(spacing: 12) {
+                Button {
+                    onDelete()
+                } label: {
+                    Image(systemName: "minus.circle")
+                }
+                .tint(.gray)
+                
+                VStack(alignment: .leading) {
+                    Text("Name")
+                    
+                    TextField("Ingredient name", text: $ingredient.name)
+                        .padding(12)
+                        .frame(height: 44)
+                        .background(
+                            RoundedRectangle(cornerRadius: 5)
+                                .fill(.clear)
+                                .strokeBorder(.gray)
+                        )
+                }
+                
+                Group {
+                    decimalTextField("Qty", value: $ingredient.units[.quantity])
+                    decimalTextField("Tbsp", value: $ingredient.units[.tablespoon])
+                    decimalTextField("Tsp", value: $ingredient.units[.teaspoon])
+                    decimalTextField("Cup", value: $ingredient.units[.cup])
+                    decimalTextField("g", value: $ingredient.units[.gram])
+                    decimalTextField("ml", value: $ingredient.units[.milliliters])
+                    decimalTextField("oz", value: $ingredient.units[.ounce])
+                }
+            }
+        }
+        
+        @ViewBuilder private func decimalTextField(_ label: any StringProtocol, value: Binding<Decimal?>) -> some View {
+            VStack {
+                Text(label)
+                
+                TextField("0", value: value, formatter: formatter)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .padding(12)
+                    .frame(width: 80, height: 44)
                     .background(
                         RoundedRectangle(cornerRadius: 5)
                             .fill(.clear)
                             .strokeBorder(.gray)
                     )
-                }
-                .tint(.black)
-            }
-            .padding()
-        }
-    }
-    
-    struct IngredientCell: View {
-        @Binding var ingredient: Ingredient
-        @State private var isExpanded: Bool = false
-        @State private var ingredientName: String = String()
-        @State private var selectedMeasurementUnitIndex: Int = .zero
-        @State private var ammount: String = String()
-        @State private var selectedMeasurementUnit: MeasurementUnit = .quantity
-        
-        let removeAction: () -> Void
-        
-        var body: some View {
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("Ingredient name", text: $ingredientName)
-                
-                ScrollView(.horizontal) {
-                    LazyHStack {
-                        ForEach(0..<ingredient.units.count, id: \.self) { index in
-                            Button {
-                                selectMeasurementUnit(index)
-                            } label: {
-                                Text("\(ingredient.units[index].ammount) " + ingredient.units[index].measurement.short)
-                                    .monospacedDigit()
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 8)
-                            }
-                            .id(index)
-                        }
-                        
-                        Button {
-                            let newIngredientUnit = IngredientUnit(measurement: .quantity, ammount: .zero)
-                            ingredient.units.append(newIngredientUnit)
-                            selectMeasurementUnit(ingredient.units.count - 1)
-                        } label: {
-                            Image(systemName: "plus.circle")
-                        }
-                    }
-                }
-                .scrollIndicators(.never)
-                .defaultScrollAnchor(.trailing, for: .initialOffset)
-                
-                if isExpanded {
-                    VStack {
-                        HStack {
-                            TextField("Ammount", text: $ammount)
-                                .keyboardType(.decimalPad)
-                            
-                            Picker("Select measurement unit", selection: $selectedMeasurementUnit) {
-                                ForEach(MeasurementUnit.allCases, id: \.self) { measurementUnit in
-                                    Button(measurementUnit.short) {
-                                        selectedMeasurementUnit = measurementUnit
-                                    }
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            
-                            Button {
-                                let newIngredientUnit = IngredientUnit(measurement: selectedMeasurementUnit, ammount: Double(ammount) ?? .zero)
-                                ingredient.units[selectedMeasurementUnitIndex] = newIngredientUnit
-                                isExpanded = false
-                            } label: {
-                                Label("Done", systemImage: "checkmark")
-                            }
-                        }
-                        
-                        Button {
-                            removeAction()
-                        } label: {
-                            HStack {
-                                Spacer()
-                                
-                                Image(systemName: "minus.circle")
-                                
-                                Text("Delete ingredient")
-                                
-                                Spacer()
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 5)
-                                    .fill(.clear)
-                                    .strokeBorder(.gray)
-                            )
-                        }
-                        .tint(.red)
-                    }
-                }
-            }
-            .overlay(alignment: .bottom) {
-                Divider()
             }
         }
         
-        private func selectMeasurementUnit(_ index: Int) {
-            ammount = String(ingredient.units[index].ammount)
-            selectedMeasurementUnit = ingredient.units[index].measurement
-            selectedMeasurementUnitIndex = index
-            isExpanded = true
+        private func onNameChange(_ : String, after: String) {
+            guard after.count > maxNameLength else { return }
+            ingredient.name = String(after.prefix(maxNameLength))
         }
     }
 }
 
 #Preview {
-    EditRecipeView(recipe: nil)
+    EditRecipeView(recipe: PreviewHelper.shared.mockRecipe)
         .environmentObject(Router())
 }
+
+/*
+ 
+ */
