@@ -16,16 +16,45 @@ struct PersonalView: View {
             
             thickDivider
             
-            NoticeSection()
+            NoticeSection(header: "Notice")
             
             thickDivider
+            
+            NoticeSection(header: "Q&A")
+            
+            thickDivider
+            
+            HStack(spacing: 16) {
+                Text("App version")
+                Text("0.0.1")
+            }
+            .padding()
+            
+            HStack(spacing: 12) {
+                Button {
+                    // TODO: 계정 비활성화
+                } label: {
+                    Text("Deactivate Account")
+                }
+                .tint(.gray)
+                
+                Text("|")
+                
+                Button {
+                    // TODO: 회원탈퇴
+                } label: {
+                    Text("Delete Account")
+                }
+                .tint(.gray)
+            }
+            .padding()
         }
         .environmentObject(router)
     }
     
     private var thickDivider: some View {
         Rectangle()
-            .frame(height: 10)
+            .frame(height: 10) 
             .foregroundStyle(.gray.opacity(0.3))
     }
 }
@@ -59,9 +88,11 @@ extension PersonalView {
     struct NoticeSection: View {
         @EnvironmentObject private var router: Router
         
+        let header: String
+        
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Notice")
+                Text(header)
                     .font(.headline.bold())
                 
                 cell()
