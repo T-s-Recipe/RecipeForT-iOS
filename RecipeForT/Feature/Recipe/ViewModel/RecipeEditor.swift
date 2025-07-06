@@ -11,21 +11,21 @@ import Foundation
 final class RecipeEditor {
     var titleText: String
     var servingsText: String {
-        didSet { servings = UInt8(servingsText) ?? .zero }
+        didSet { servings = Decimal(servingsText) ?? .zero }
     }
     var costText: String
     var timeText: String
     var notesText: String
     var ingredients: [Ingredient]
     
-    var servings: UInt8
+    var servings: Decimal
     
     init(recipe: Recipe? = nil) {
         let source = recipe ?? .sample
         titleText = source.name
-        servingsText = source.servingsCount == 0 ? "4" : String(source.servingsCount)
+        servingsText = source.servingsCount == 0 ? "4" : source.servingsCount.description
         costText = source.cost == 0 ? "" : source.cost.description
-        timeText = source.cookingTime == 0 ? "" : String(source.cookingTime)
+        timeText = source.cookingTime == 0 ? "" : source.cookingTime.description
         notesText = source.description
         ingredients = source.ingredients
         servings = source.servingsCount
@@ -48,14 +48,16 @@ extension RecipeEditor {
     }
     
     func increaseServingsCount() {
-        guard servings < UInt8.max else { return }
-        servings += 1
-        servingsText = String(servings)
+        let maxServings: Decimal = 100
+        guard servings < maxServings else { return }
+        servings += 0.5
+        servingsText = servings.description
     }
     
     func decreaseServingsCount() {
-        guard servings > UInt8.min else { return }
-        servings -= 1
-        servingsText = String(servings)
+        let minServings: Decimal = 0
+        guard servings > minServings else { return }
+        servings -= 0.5
+        servingsText = servings.description
     }
 }
