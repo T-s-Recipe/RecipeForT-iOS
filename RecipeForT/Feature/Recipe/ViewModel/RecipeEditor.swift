@@ -11,7 +11,7 @@ import Foundation
 final class RecipeEditor {
     var titleText: String
     var servingsText: String {
-        didSet { servings = Decimal(servingsText) ?? .zero }
+        didSet { synchronize(servingsText) }
     }
     var costText: String
     var timeText: String
@@ -29,6 +29,13 @@ final class RecipeEditor {
         notesText = source.description
         ingredients = source.ingredients
         servings = source.servingsCount
+    }
+    
+    private func synchronize(_ servingsText: String) {
+        guard let decimal = Decimal(string: servingsText),
+              servings != decimal
+        else { return }
+        servings = decimal
     }
 }
 
