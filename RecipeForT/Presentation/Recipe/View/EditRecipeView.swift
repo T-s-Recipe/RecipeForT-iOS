@@ -21,16 +21,8 @@ struct EditRecipeView: View {
                 navigationHeader
                 
                 ScrollView(.vertical) {
-                    @Bindable var editor = editor
-                    
                     LazyVStack {
-                        RecipeBaseInfo(
-                            title: $editor.titleText,
-                            servings: $editor.servingsText,
-                            cost: $editor.costText,
-                            time: $editor.timeText,
-                            notes: $editor.notesText
-                        )
+                        RecipeBaseInfo(editor: editor)
                         
                         thickDivider
                         
@@ -100,25 +92,7 @@ extension EditRecipeView {
         }
         
         @FocusState private var focused: TextFieldType?
-        @Binding private var title: String
-        @Binding private var servings: String
-        @Binding private var cost: String
-        @Binding private var time: String
-        @Binding private var notes: String
-        
-        init(
-            title: Binding<String>,
-            servings: Binding<String>,
-            cost: Binding<String>,
-            time: Binding<String>,
-            notes: Binding<String>
-        ) {
-            self._title = title
-            self._servings = servings
-            self._cost = cost
-            self._time = time
-            self._notes = notes
-        }
+        @Bindable var editor: RecipeEditor
         
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
@@ -142,31 +116,32 @@ extension EditRecipeView {
                 
                 Text("Title *")
                 
-                textField("Title of the recipe", text: $title, equals: .title)
+                textField("Title of the recipe", text: $editor.titleText, equals: .title)
                 
                 HStack(spacing: 12) {
                     VStack(alignment: .leading) {
-                        Text("Servings")
+                        Text("Servings *")
                         
-                        textField("How many servings?", text: $servings, equals: .servings)
+                        textField("How many servings?", text: $editor.servingsText, equals: .servings)
                     }
                     
                     VStack(alignment: .leading) {
                         Text("Cost")
                         
-                        textField("Cooking cost", text: $cost, equals: .cost)
+                        textField("Cooking cost", text: $editor.costText, equals: .cost)
                     }
                     
                     VStack(alignment: .leading) {
                         Text("Time(min)")
                         
-                        textField("Total cooking time", text: $time, equals: .time)
+                        textField("Total cooking time", text: $editor.timeText, equals: .time)
                     }
                 }
                 
                 Text("Recipe Notes")
                 
-                textField("Add notes or tips for this recipe", text: $notes, equals: .notes)
+                textField("Add notes or tips for this recipe", text: $editor.notesText, equals: .notes)
+                    .lineLimit(10)
             }
             .padding()
         }
@@ -176,7 +151,7 @@ extension EditRecipeView {
             text: Binding<String>,
             equals: TextFieldType
         ) -> some View {
-            TextField(prompt, text: text)
+            TextField(prompt, text: text, axis: .vertical)
                 .focused($focused, equals: equals)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
