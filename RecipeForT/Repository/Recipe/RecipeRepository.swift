@@ -7,9 +7,6 @@
 
 import Foundation
 
-protocol RecipeRepositoryProtocol {
-    func create(_ recipe: Recipe) async throws
-    func read() async throws -> [Recipe]
-    func update(_ recipe: Recipe) async throws
-    func delete(_ id: UInt64) async throws
+final class RecipeRepository {
+    
 }
