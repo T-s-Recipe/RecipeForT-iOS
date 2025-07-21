@@ -8,6 +8,7 @@
 import Foundation
 
 protocol RecipeSearchUseCaseProtocol {
+    func execute(page: Int) async throws -> [Recipe]
     func execute(by keyword: String) async throws -> [Recipe]
 }
 
@@ -21,6 +22,10 @@ final class RecipeSearchUseCase {
 
 // MARK: - RecipeSearchUseCaseProtocol Conformation
 extension RecipeSearchUseCase: RecipeSearchUseCaseProtocol {
+    func execute(page: Int) async throws -> [Recipe] {
+        // TODO: WIP
+    }
+    
     func execute(by keyword: String) async throws -> [Recipe] {
         // TODO: WIP
     }
