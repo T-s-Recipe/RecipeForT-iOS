@@ -121,9 +121,16 @@ enum MeasurementUnit: CaseIterable {
     }
 }
 
-/// 조리과정 단계적 구분
-enum CookingStep {
-    // 재료손질
-    // 양념만들기
-    // 조리
+/// 조리과정
+struct CookingStep {
+    var title: String
+    var detailedProcesses: [CookingDetailedProcess]
+}
+
+/// 조리과정 세부단계
+struct CookingDetailedProcess {
+    let id: UInt64
+    let imageURL: URL?
+    var image: Data?
+    let description: String
 }
