@@ -46,7 +46,16 @@ struct EditRecipeView: View {
             
             Spacer()
             
-            Text("Recipe")
+            HStack(spacing: 4) {
+                Text("Recipe")
+                
+                Button {
+                    
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .tint(.black)
+            }
             
             Spacer()
             
@@ -119,22 +128,40 @@ extension EditRecipeView {
                 textField("Title of the recipe", text: $editor.titleText, equals: .title)
                 
                 HStack(spacing: 12) {
-                    VStack(alignment: .leading) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Servings *")
                         
-                        textField("How many servings?", text: $editor.servingsText, equals: .servings)
+                        textField("How many servings?", text: $editor.servingsText, equals: .servings, isDisabled: editor.isServingsTextFieldDisabled)
+                        
+                        HStack(spacing: 8) {
+                            CheckboxButton(isOn: $editor.isServingsTextFieldDisabled)
+                            
+                            Text("Not sure")
+                        }
                     }
                     
-                    VStack(alignment: .leading) {
-                        Text("Cost")
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Cost ($)")
                         
-                        textField("Cooking cost", text: $editor.costText, equals: .cost)
+                        textField("Cooking cost", text: $editor.costText, equals: .cost, isDisabled: editor.isCostTextFieldDisabled)
+                        
+                        HStack(spacing: 8) {
+                            CheckboxButton(isOn: $editor.isCostTextFieldDisabled)
+                            
+                            Text("Not sure")
+                        }
                     }
                     
-                    VStack(alignment: .leading) {
-                        Text("Time(min)")
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Duration (min)")
                         
-                        textField("Total cooking time", text: $editor.timeText, equals: .time)
+                        textField("Total cooking time", text: $editor.timeText, equals: .time, isDisabled: editor.isTimeTextFieldDisabled)
+                        
+                        HStack(spacing: 8) {
+                            CheckboxButton(isOn: $editor.isTimeTextFieldDisabled)
+                            
+                            Text("Not sure")
+                        }
                     }
                 }
                 
@@ -149,18 +176,21 @@ extension EditRecipeView {
         @ViewBuilder private func textField(
             _ prompt: String,
             text: Binding<String>,
-            equals: TextFieldType
+            equals: TextFieldType,
+            isDisabled: Bool = false
         ) -> some View {
             TextField(prompt, text: text, axis: .vertical)
                 .focused($focused, equals: equals)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
+                .foregroundStyle(isDisabled ? .gray : .primary)
                 .background(
                     RoundedRectangle(cornerRadius: 5)
-                        .fill(.clear)
+                        .fill(isDisabled ? .gray.opacity(0.3) : .clear)
                         .strokeBorder(focused == equals ? .black : .gray)
                 )
                 .onSubmit { focused = equals.next }
+                .disabled(isDisabled)
         }
     }
     
@@ -204,18 +234,20 @@ extension EditRecipeView {
                 
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyVStack {
-                        ForEach($editor.ingredients) { ingredient in
+                        ForEach($editor.ingredients) { $ingredient in
                             VStack {
-                                IngredientRow(ingredient: ingredient) {
-                                    editor.removeIngredient(ingredient.wrappedValue)
+                                IngredientRow(ingredient: $ingredient) {
+                                    editor.removeIngredient(with: ingredient.id)
+                                } onMoveUp: {
+                                    editor.moveIngredientUp(with: ingredient.id)
+                                } onMoveDown: {
+                                    editor.moveIngredientDown(with: ingredient.id)
                                 }
-                                
-                                if editor.ingredients.count > 1 && editor.ingredients.last?.id != ingredient.id {
-                                    Divider()
-                                        .padding(.vertical)
+
+                                if ingredient.id != editor.ingredients.last?.id {
+                                    Divider().padding(.vertical, 8)
                                 }
                             }
-                            
                         }
                     }
                 }
@@ -246,12 +278,44 @@ extension EditRecipeView {
         
         private let maxNameLength: Int = 20
         
-        let onDelete: () -> Void
+        let onRemove: () -> Void
+        let onMoveUp: () -> Void
+        let onMoveDown: () -> Void
         
         var body: some View {
             HStack(spacing: 12) {
+                VStack(spacing: 0) {
+                    Button {
+                        onMoveUp()
+                    } label: {
+                        Image(systemName: "chevron.up")
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 9)
+                            .background(
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(.clear)
+                                    .strokeBorder(.gray)
+                            )
+                    }
+                    .tint(.gray)
+                    
+                    Button {
+                        onMoveDown()
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 9)
+                            .background(
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(.clear)
+                                    .strokeBorder(.gray)
+                            )
+                    }
+                    .tint(.gray)
+                }
+                
                 Button {
-                    onDelete()
+                    onRemove()
                 } label: {
                     Image(systemName: "minus.circle")
                 }
@@ -310,7 +374,3 @@ extension EditRecipeView {
     EditRecipeView(recipe: PreviewHelper.shared.mockRecipe)
         .environmentObject(Router())
 }
-
-/*
- 
- */
