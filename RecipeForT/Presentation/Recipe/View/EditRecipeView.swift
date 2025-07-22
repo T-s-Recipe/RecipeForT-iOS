@@ -10,28 +10,30 @@ import SwiftUI
 struct EditRecipeView: View {
     @EnvironmentObject var router: Router
     @State private var editor: RecipeEditor
+    @State private var isFullScreenCoverPresented: Bool = false
     
     init(recipe: Recipe?) {
         self.editor = RecipeEditor(recipe: recipe)
     }
     
     var body: some View {
-        ZStack {
-            VStack {
-                navigationHeader
-                
-                ScrollView(.vertical) {
-                    LazyVStack {
-                        RecipeBaseInfo(editor: editor)
-                        
-                        thickDivider
-                        
-                        IngredientsInfo(editor: editor)
-                        
-                        thickDivider
-                    }
+        VStack {
+            navigationHeader
+            
+            ScrollView(.vertical) {
+                LazyVStack {
+                    RecipeBaseInfo(editor: editor)
+                    
+                    thickDivider
+                    
+                    IngredientsInfo(editor: editor)
+                    
+                    thickDivider
                 }
             }
+        }
+        .fullScreenCover(isPresented: $isFullScreenCoverPresented) {
+            MustReadSheet()
         }
     }
     
@@ -50,7 +52,7 @@ struct EditRecipeView: View {
                 Text("Recipe")
                 
                 Button {
-                    
+                    isFullScreenCoverPresented.toggle()
                 } label: {
                     Image(systemName: "info.circle")
                 }
@@ -366,6 +368,58 @@ extension EditRecipeView {
         private func onNameChange(_ : String, after: String) {
             guard after.count > maxNameLength else { return }
             ingredient.name = String(after.prefix(maxNameLength))
+        }
+    }
+}
+
+// MARK: - Sheet
+extension EditRecipeView {
+    struct MustReadSheet: View {
+        @Environment(\.dismiss) private var dismiss
+        
+        var body: some View {
+            VStack {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .tint(.black)
+                    
+                    Spacer()
+                    
+                    Text("Must read")
+                    
+                    Spacer()
+                }
+                .padding()
+                
+                Divider()
+                
+                ScrollView(.vertical) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Sauce mixing order")
+                            .font(.headline)
+                        
+                        Text("When writing out detailed recipe steps, please follow this order:")
+                        Text("List the ingredients starting with those that don't stick to the spoon, followed by those that do. (e.g. sugar, salt -> honey, soy sauce")
+                        
+                        Text("Measurement units")
+                            .font(.headline)
+                        
+                        Text("1T: 1 tablespoon")
+                        Text("1t: 1 teaspoon")
+                        
+                        Text("Recipe")
+                            .font(.headline)
+                        
+                        Text("When writing a recipe, avoid writing long sentences. Break them down into shorter steps as much as possible.")
+                    }
+                    .padding(16)
+                }
+            }
+            .presentationDetents([.fraction(0.9999)])
         }
     }
 }
