@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Swinject
 
 @Observable @MainActor
 final class RecipeEditor {
@@ -17,6 +18,8 @@ final class RecipeEditor {
     var timeText: String
     var notesText: String
     var ingredients: [Ingredient]
+    var sources: [Ingredient]
+    var detailedSteps: [CookingStep]
     
     var servings: Decimal
     
@@ -39,16 +42,23 @@ final class RecipeEditor {
         }
     }
     
+    private let maxServings: Decimal = 100
+    let minServings: Decimal = 0
     
-    init(recipe: Recipe? = nil) {
-        let source = recipe ?? .sample
-        titleText = source.name
-        servingsText = source.servingsCount == 0 ? "4" : source.servingsCount.description
-        costText = source.cost == 0 ? "" : source.cost.description
-        timeText = source.cookingTime == 0 ? "" : source.cookingTime.description
-        notesText = source.description
-        ingredients = source.ingredients
-        servings = source.servingsCount
+    private let recipeUploadUseCase: RecipeUploadUseCaseProtocol
+    
+    init(recipe: Recipe? = nil, resolver: Resolver) {
+        let recipe = recipe ?? .sample
+        titleText = recipe.name
+        servingsText = recipe.servingsCount == 0 ? "4" : recipe.servingsCount.description
+        costText = recipe.cost == 0 ? "" : recipe.cost.description
+        timeText = recipe.cookingTime == 0 ? "" : recipe.cookingTime.description
+        notesText = recipe.description
+        ingredients = recipe.ingredients
+        servings = recipe.servingsCount
+        sources = recipe.sources
+        detailedSteps = recipe.detailedSteps
+        self.recipeUploadUseCase = resolver.resolve(RecipeUploadUseCaseProtocol.self)!
     }
     
     private func synchronize(_ servingsText: String) {
@@ -61,39 +71,20 @@ final class RecipeEditor {
 
 // MARK: - Interfaces
 extension RecipeEditor {
-    func removeIngredient(with id: UUID) {
-        ingredients.removeAll { $0.id == id }
-    }
     
-    func moveIngredientUp(with id: UUID) {
-        guard let originIndex = ingredients.firstIndex(where: { $0.id == id }),
-              originIndex > 0
-        else { return }
-        ingredients.move(fromOffsets: IndexSet(integer: originIndex), toOffset: originIndex - 1)
-    }
+}
+
+// MARK: - RecipeBaseInfoViewModelDelegate Conformation
+extension RecipeEditor: @preconcurrency RecipeBaseInfoViewModelDelegate {
     
-    func moveIngredientDown(with id: UUID) {
-        guard let originIndex = ingredients.firstIndex(where: { $0.id == id }),
-              originIndex < ingredients.count - 1
-        else { return }
-        ingredients.move(fromOffsets: IndexSet(integer: originIndex), toOffset: originIndex + 2)
-    }
+}
+
+// MARK: - IngredientsInfoViewModelDelegate Conformation
+extension RecipeEditor: @preconcurrency IngredientsInfoViewModelDelegate {
     
-    func addIngredient() {
-        ingredients.append(Ingredient(name: "", units: .init()))
-    }
+}
+
+// MARK: - DetailedStepsInfoViewModelDelegate Conformation
+extension RecipeEditor: @preconcurrency DetailedStepsInfoViewModelDelegate {
     
-    func increaseServingsCount() {
-        let maxServings: Decimal = 100
-        guard servings < maxServings else { return }
-        servings += 0.5
-        servingsText = servings.description
-    }
-    
-    func decreaseServingsCount() {
-        let minServings: Decimal = 0
-        guard servings > minServings else { return }
-        servings -= 0.5
-        servingsText = servings.description
-    }
 }
