@@ -24,9 +24,11 @@ final class RecipeSearchUseCase {
 extension RecipeSearchUseCase: RecipeSearchUseCaseProtocol {
     func execute(page: Int) async throws -> [Recipe] {
         // TODO: WIP
+        return []
     }
     
     func execute(by keyword: String) async throws -> [Recipe] {
         // TODO: WIP
+        return []
     }
 }
