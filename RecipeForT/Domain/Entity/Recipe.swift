@@ -27,6 +27,10 @@ struct Recipe: Identifiable {
     let description: String
     /// 재료 목록
     let ingredients: [Ingredient]
+    /// 소스 목록
+    let sources: [Ingredient]
+    /// 조리과정 목록
+    let detailedSteps: [CookingStep]
     
     init(
         id: UInt64 = .zero,
@@ -37,7 +41,9 @@ struct Recipe: Identifiable {
         cost: Decimal = .zero,
         cookingTime: Decimal = .zero,
         description: String = "",
-        ingredients: [Ingredient] = []
+        ingredients: [Ingredient] = [],
+        sources: [Ingredient] = [],
+        detailedSteps: [CookingStep] = []
     ) {
         self.id = id
         self.authorID = authorID
@@ -48,6 +54,8 @@ struct Recipe: Identifiable {
         self.cookingTime = cookingTime
         self.description = description
         self.ingredients = ingredients
+        self.sources = sources
+        self.detailedSteps = detailedSteps
     }
     
     static var sample: Recipe { .init() }
@@ -122,15 +130,22 @@ enum MeasurementUnit: CaseIterable {
 }
 
 /// 조리과정
-struct CookingStep {
+struct CookingStep: Identifiable {
+    let id: UUID = UUID()
     var title: String
     var detailedProcesses: [CookingDetailedProcess]
 }
 
 /// 조리과정 세부단계
-struct CookingDetailedProcess {
-    let id: UInt64
+struct CookingDetailedProcess: Identifiable {
+    let id: UUID = UUID()
     let imageURL: URL?
     var image: Data?
-    let description: String
+    var description: String
+    
+    init(imageURL: URL? = nil, image: Data? = nil, description: String) {
+        self.imageURL = imageURL
+        self.image = image
+        self.description = description
+    }
 }
