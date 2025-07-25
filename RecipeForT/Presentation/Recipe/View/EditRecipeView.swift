@@ -6,14 +6,15 @@
 //
 
 import SwiftUI
+import Swinject
 
 struct EditRecipeView: View {
     @EnvironmentObject var router: Router
     @State private var editor: RecipeEditor
     @State private var isFullScreenCoverPresented: Bool = false
     
-    init(recipe: Recipe?) {
-        self.editor = RecipeEditor(recipe: recipe)
+    init(recipe: Recipe?, resolver: Resolver) {
+        self.editor = RecipeEditor(recipe: recipe, resolver: resolver)
     }
     
     var body: some View {
@@ -29,6 +30,8 @@ struct EditRecipeView: View {
                     IngredientsInfo(editor: editor)
                     
                     thickDivider
+                    
+                    DetailedStepsInfo(editor: editor)
                 }
             }
         }
@@ -103,7 +106,11 @@ extension EditRecipeView {
         }
         
         @FocusState private var focused: TextFieldType?
-        @Bindable var editor: RecipeEditor
+        @State private var viewModel: RecipeBaseInfoViewModel = RecipeBaseInfoViewModel()
+        
+        init(editor: RecipeEditor) {
+            self.viewModel.delegate = editor
+        }
         
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
@@ -127,16 +134,16 @@ extension EditRecipeView {
                 
                 Text("Title *")
                 
-                textField("Title of the recipe", text: $editor.titleText, equals: .title)
+                textField("Title of the recipe", text: $viewModel.titleText, equals: .title)
                 
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Servings *")
                         
-                        textField("How many servings?", text: $editor.servingsText, equals: .servings, isDisabled: editor.isServingsTextFieldDisabled)
+                        textField("How many servings?", text: $viewModel.servingsText, equals: .servings, isDisabled: viewModel.isServingsTextFieldDisabled)
                         
                         HStack(spacing: 8) {
-                            CheckboxButton(isOn: $editor.isServingsTextFieldDisabled)
+                            CheckboxButton(isOn: $viewModel.isServingsTextFieldDisabled)
                             
                             Text("Not sure")
                         }
@@ -145,10 +152,10 @@ extension EditRecipeView {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Cost ($)")
                         
-                        textField("Cooking cost", text: $editor.costText, equals: .cost, isDisabled: editor.isCostTextFieldDisabled)
+                        textField("Cooking cost", text: $viewModel.costText, equals: .cost, isDisabled: viewModel.isCostTextFieldDisabled)
                         
                         HStack(spacing: 8) {
-                            CheckboxButton(isOn: $editor.isCostTextFieldDisabled)
+                            CheckboxButton(isOn: $viewModel.isCostTextFieldDisabled)
                             
                             Text("Not sure")
                         }
@@ -157,10 +164,10 @@ extension EditRecipeView {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Duration (min)")
                         
-                        textField("Total cooking time", text: $editor.timeText, equals: .time, isDisabled: editor.isTimeTextFieldDisabled)
+                        textField("Total cooking time", text: $viewModel.timeText, equals: .time, isDisabled: viewModel.isTimeTextFieldDisabled)
                         
                         HStack(spacing: 8) {
-                            CheckboxButton(isOn: $editor.isTimeTextFieldDisabled)
+                            CheckboxButton(isOn: $viewModel.isTimeTextFieldDisabled)
                             
                             Text("Not sure")
                         }
@@ -169,7 +176,7 @@ extension EditRecipeView {
                 
                 Text("Recipe Notes")
                 
-                textField("Add notes or tips for this recipe", text: $editor.notesText, equals: .notes)
+                textField("Add notes or tips for this recipe", text: $viewModel.notesText, equals: .notes)
                     .lineLimit(10)
             }
             .padding()
@@ -197,7 +204,11 @@ extension EditRecipeView {
     }
     
     struct IngredientsInfo: View {
-        @Bindable var editor: RecipeEditor
+        @State private var viewModel: IngredientsInfoViewModel = IngredientsInfoViewModel()
+        
+        init(editor: RecipeEditor) {
+            self.viewModel.delegate = editor
+        }
         
         var body: some View {
             VStack(spacing: 12) {
@@ -207,7 +218,7 @@ extension EditRecipeView {
                 
                 HStack(spacing: 12) {
                     Button {
-                        editor.decreaseServingsCount()
+                        viewModel.decreaseServingsCount()
                     } label: {
                         Image(systemName: "minus")
                     }
@@ -218,11 +229,11 @@ extension EditRecipeView {
                     )
                     .tint(.black)
                     
-                    Text("\(editor.servings) \(editor.servings > 1 ? "Servings" : "Serving")")
+                    Text("\(viewModel.servings) \(viewModel.servings > 1 ? "Servings" : "Serving")")
                         .monospacedDigit()
 
                     Button {
-                        editor.increaseServingsCount()
+                        viewModel.increaseServingsCount()
                     } label: {
                         Image(systemName: "plus")
                     }
@@ -234,30 +245,91 @@ extension EditRecipeView {
                     .tint(.black)
                 }
                 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyVStack {
-                        ForEach($editor.ingredients) { $ingredient in
-                            VStack {
-                                IngredientRow(ingredient: $ingredient) {
-                                    editor.removeIngredient(with: ingredient.id)
-                                } onMoveUp: {
-                                    editor.moveIngredientUp(with: ingredient.id)
-                                } onMoveDown: {
-                                    editor.moveIngredientDown(with: ingredient.id)
-                                }
+                // MARK: - Basic ingredients
+                Section {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyVStack {
+                            ForEach($viewModel.ingredients) { $ingredient in
+                                VStack {
+                                    IngredientRow(ingredient: $ingredient) {
+                                        viewModel.onRemoveIngredient(with: ingredient.id)
+                                    } onMoveUp: {
+                                        viewModel.onMoveIngredientUp(with: ingredient.id)
+                                    } onMoveDown: {
+                                        viewModel.onMoveIngredientDown(with: ingredient.id)
+                                    }
 
-                                if ingredient.id != editor.ingredients.last?.id {
-                                    Divider().padding(.vertical, 8)
+                                    if ingredient.id != viewModel.ingredients.last?.id {
+                                        Divider().padding(.vertical, 8)
+                                    }
                                 }
                             }
                         }
                     }
+                    .contentMargins(16)
+                } header: {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Basic ingredients")
+                            .font(.headline)
+                        
+                        Rectangle()
+                            .frame(height: 2)
+                    }
+                    .padding([.top, .horizontal])
                 }
-                .contentMargins(16)
                 
                 HStack {
                     Button {
-                        editor.addIngredient()
+                        viewModel.onAddIngredient()
+                    } label: {
+                        Label("Add Ingredient", systemImage: "plus.circle")
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(.gray)
+                            )
+                    }
+                    .tint(.white)
+                    .padding([.horizontal, .bottom])
+                }
+                
+                // MARK: - Sources area
+                Section {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyVStack {
+                            ForEach($viewModel.sources) { $source in
+                                VStack {
+                                    IngredientRow(ingredient: $source) {
+                                        viewModel.onRemoveSource(with: source.id)
+                                    } onMoveUp: {
+                                        viewModel.onMoveSourceUp(with: source.id)
+                                    } onMoveDown: {
+                                        viewModel.onMoveSourceDown(with: source.id)
+                                    }
+
+                                    if source.id != viewModel.sources.last?.id {
+                                        Divider().padding(.vertical, 8)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .contentMargins(16)
+                } header: {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Source")
+                            .font(.headline)
+                        
+                        Rectangle()
+                            .frame(height: 2)
+                    }
+                    .padding([.top, .horizontal])
+                }
+                
+                HStack {
+                    Button {
+                        viewModel.onAddSource()
                     } label: {
                         Label("Add Ingredient", systemImage: "plus.circle")
                             .padding()
@@ -370,6 +442,82 @@ extension EditRecipeView {
             ingredient.name = String(after.prefix(maxNameLength))
         }
     }
+    
+    struct DetailedStepsInfo: View {
+        @State private var viewModel: DetailedStepsInfoViewModel = DetailedStepsInfoViewModel()
+        
+        init(editor: RecipeEditor) {
+            self.viewModel.delegate = editor
+        }
+        
+        var body: some View {
+            VStack(spacing: 12) {
+                Text("Detailed Steps")
+                    .font(.title3.bold())
+                    .padding(.top, 16)
+                
+                LazyVStack {
+                    ForEach($viewModel.detailedSteps) { $step in
+                        Section {
+                            ForEach($step.detailedProcesses) { $process in
+                                DetailedProcessCell(process: $process)
+                            }
+                        } header: {
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack {
+                                    Text(step.title)
+                                        .font(.headline)
+                                    
+                                    Spacer()
+                                    
+                                    Button {
+                                        
+                                    } label: {
+                                        Image(systemName: "trash")
+                                    }
+                                }
+                                
+                                Rectangle()
+                                    .frame(height: 2)
+                                
+                                Text("Detailed process *")
+                                
+                                Text("Photo: Optional / Recipe: Required")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding([.top, .horizontal])
+                        }
+                    }
+                }
+                
+                HStack {
+                    Button {
+                        viewModel.onAddStep()
+                    } label: {
+                        Label("Next Step", systemImage: "plus.circle")
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(.gray)
+                            )
+                    }
+                    .tint(.white)
+                    .padding([.horizontal, .bottom])
+                }
+            }
+        }
+    }
+    
+    struct DetailedProcessCell: View {
+        @Binding var process: CookingDetailedProcess
+        
+        var body: some View {
+            HStack(alignment: .top) {
+                
+            }
+        }
+    }
 }
 
 // MARK: - Sheet
@@ -422,9 +570,4 @@ extension EditRecipeView {
             .presentationDetents([.fraction(0.9999)])
         }
     }
-}
-
-#Preview {
-    EditRecipeView(recipe: PreviewHelper.shared.mockRecipe)
-        .environmentObject(Router())
 }
