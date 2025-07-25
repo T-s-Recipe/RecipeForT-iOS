@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Swinject
 
 @Observable
 final class TabSelector {
@@ -25,8 +26,12 @@ final class TabSelector {
 }
 
 struct ContentView: View {
-    @StateObject private var router = Router()
+    @StateObject private var router: Router
     @State private var tabSelector = TabSelector()
+    
+    init(resolver: Resolver) {
+        self._router = StateObject(wrappedValue: Router(resolver: resolver))
+    }
     
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -85,8 +90,4 @@ struct ContentView: View {
 
 extension ContentView {
     typealias TabSelection = TabSelector.TabSelection
-}
-
-#Preview {
-    ContentView()
 }

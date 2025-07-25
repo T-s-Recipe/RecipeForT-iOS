@@ -129,10 +129,3 @@ extension PersonalView {
         }
     }
 }
-
-#Preview {
-    NavigationStack {
-        PersonalView()
-            .environmentObject(Router())
-    }
-}

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Swinject
 
 protocol RouterProtocol {
     associatedtype Destination: Routable where Destination == Route
@@ -26,7 +27,7 @@ protocol Routable: Identifiable, Hashable {
     
     var presentingType: PresentingType { get }
     
-    @ViewBuilder func view(with router: Router) -> Content
+    @ViewBuilder func view(with router: Router, resolver: Resolver) -> Content
 }
 
 extension Routable {
@@ -58,11 +59,11 @@ enum Route: Routable {
         }
     }
     
-    @ViewBuilder func view(with router: Router) -> some View {
+    @ViewBuilder func view(with router: Router, resolver: Resolver) -> some View {
         switch self {
         case .mainView: MainView()
         case .searchView: SearchingView()
-        case .editRecipeView(let recipe): EditRecipeView(recipe: recipe)
+        case .editRecipeView(let recipe): EditRecipeView(recipe: recipe, resolver: resolver)
         case .myPageView: PersonalView()
         case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe)
         case .loginView(let sectionType): LoginView(sectionType: sectionType)
@@ -93,6 +94,12 @@ final class Router: ObservableObject, RouterProtocol {
         sheet != nil || fullScreenCover != nil
     }
     
+    private let resolver: Resolver
+    
+    init(resolver: Resolver) {
+        self.resolver = resolver
+    }
+    
     private func _push(_ destination: Destination) {
         path.append(destination)
     }
@@ -111,7 +118,7 @@ final class Router: ObservableObject, RouterProtocol {
 // MARK: - Interfaces
 extension Router {
     @ViewBuilder func view(to destination: Destination) -> some View {
-        destination.view(with: self)
+        destination.view(with: self, resolver: resolver)
             .environmentObject(self)
     }
     

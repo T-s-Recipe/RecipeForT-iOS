@@ -6,12 +6,23 @@
 //
 
 import SwiftUI
+import Swinject
 
 @main
 struct RecipeForTApp: App {
+    private let resolver: Resolver = {
+        let assembler = Assembler([
+            PresentationAssembly(),
+            DomainAssembly(),
+            RepositoryAssembly(),
+            InfrastructureAssembly()
+        ])
+        return assembler.resolver
+    }()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(resolver: resolver)
         }
     }
 }

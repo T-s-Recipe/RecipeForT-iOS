@@ -102,7 +102,3 @@ extension MainView {
         }
     }
 }
-
-#Preview {
-    ContentView()
-}

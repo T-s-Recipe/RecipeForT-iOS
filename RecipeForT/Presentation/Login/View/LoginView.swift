@@ -159,5 +159,5 @@ extension LoginView {
     NavigationStack {
         LoginView(sectionType: .signIn)
     }
-    .environmentObject(Router())
+    .environmentObject(PreviewHelper.shared.router)
 }
