@@ -121,16 +121,17 @@ extension EditRecipeView {
                 
                 Text("Picture *")
                 
-                Image(systemName: "camera.fill")
-                    .resizable()
-                    .frame(width: 28, height: 28)
-                    .padding(16)
-                    .foregroundStyle(.gray)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(.clear)
-                            .strokeBorder(.gray)
-                    )
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(.clear)
+                    .strokeBorder(.gray)
+                    .frame(width: 80, height: 60)
+                    .overlay {
+                        Image(systemName: "camera.fill")
+                            .resizable()
+                            .frame(width: 28, height: 28)
+                            .padding(16)
+                            .foregroundStyle(.gray)
+                    }
                 
                 Text("Title *")
                 
@@ -460,18 +461,28 @@ extension EditRecipeView {
                     ForEach($viewModel.detailedSteps) { $step in
                         Section {
                             ForEach($step.detailedProcesses) { $process in
-                                DetailedProcessCell(process: $process)
+                                DetailedProcessCell(process: $process) {
+                                    viewModel.onRemoveDetailedProcess(stepID: step.id, processID: process.id)
+                                } onMoveUp: {
+                                    viewModel.onMoveDetailedProcessUp(stepID: step.id, processID: process.id)
+                                } onMoveDown: {
+                                    viewModel.onMoveDetailedProcessDown(stepID: step.id, processID: process.id)
+                                }
+                                
+                                if process.id != step.detailedProcesses.last?.id {
+                                    Divider().padding(.vertical, 8)
+                                }
                             }
                         } header: {
                             VStack(alignment: .leading, spacing: 16) {
                                 HStack {
-                                    Text(step.title)
+                                    TextField(step.title, text: $step.title)
                                         .font(.headline)
                                     
                                     Spacer()
                                     
                                     Button {
-                                        
+                                        viewModel.onRemoveStep(with: step.id)
                                     } label: {
                                         Image(systemName: "trash")
                                     }
@@ -486,6 +497,22 @@ extension EditRecipeView {
                                     .foregroundStyle(.secondary)
                             }
                             .padding([.top, .horizontal])
+                        } footer: {
+                            HStack {
+                                Button {
+                                    viewModel.onAddDetailedProcess(stepID: step.id)
+                                } label: {
+                                    Label("Add Ingredient", systemImage: "plus.circle")
+                                        .padding()
+                                        .frame(maxWidth: .infinity)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 5)
+                                                .fill(.gray)
+                                        )
+                                }
+                                .tint(.white)
+                                .padding([.horizontal, .bottom])
+                            }
                         }
                     }
                 }
@@ -512,10 +539,77 @@ extension EditRecipeView {
     struct DetailedProcessCell: View {
         @Binding var process: CookingDetailedProcess
         
+        let onRemove: () -> Void
+        let onMoveUp: () -> Void
+        let onMoveDown: () -> Void
+        
         var body: some View {
             HStack(alignment: .top) {
+                HStack {
+                    VStack(spacing: 0) {
+                        Button {
+                            onMoveUp()
+                        } label: {
+                            Image(systemName: "chevron.up")
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 9)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(.clear)
+                                        .strokeBorder(.gray)
+                                )
+                        }
+                        .tint(.gray)
+                        
+                        Button {
+                            onMoveDown()
+                        } label: {
+                            Image(systemName: "chevron.down")
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 9)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(.clear)
+                                        .strokeBorder(.gray)
+                                )
+                        }
+                        .tint(.gray)
+                    }
+                    
+                    Button {
+                        onRemove()
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .tint(.gray)
+                }
                 
+                VStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(.clear)
+                        .strokeBorder(.gray)
+                        .frame(width: 80, height: 60)
+                        .overlay {
+                            Image(systemName: "camera.fill")
+                                .resizable()
+                                .frame(width: 28, height: 28)
+                                .padding(16)
+                                .foregroundStyle(.gray)
+                        }
+                    
+                    TextField("Description here", text: $process.description, axis: .vertical)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .foregroundStyle(.primary)
+                        .background(
+                            RoundedRectangle(cornerRadius: 5)
+                                .fill(.clear)
+                                .strokeBorder(.gray)
+                        )
+                        .lineLimit(5)
+                }
             }
+            .padding()
         }
     }
 }

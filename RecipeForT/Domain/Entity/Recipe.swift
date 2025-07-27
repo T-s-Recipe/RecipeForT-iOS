@@ -134,6 +134,11 @@ struct CookingStep: Identifiable {
     let id: UUID = UUID()
     var title: String
     var detailedProcesses: [CookingDetailedProcess]
+    
+    init(title: String, detailedProcesses: [CookingDetailedProcess] = [.init(description: "")]) {
+        self.title = title
+        self.detailedProcesses = detailedProcesses
+    }
 }
 
 /// 조리과정 세부단계

@@ -163,22 +163,32 @@ final class DetailedStepsInfoViewModel {
     }
     
     func onRemoveStep(with id: UUID) {
-        
+        detailedSteps.removeAll(where: { $0.id == id })
     }
     
     func onAddDetailedProcess(stepID: UUID) {
-        
+        guard let index = detailedSteps.firstIndex(where: { $0.id == stepID }) else { return }
+        detailedSteps[index].detailedProcesses.append(.init(description: ""))
     }
     
     func onRemoveDetailedProcess(stepID: UUID, processID: UUID) {
-        
+        guard let stepIndex = detailedSteps.firstIndex(where: { $0.id == stepID }),
+              let processIndex = detailedSteps[stepIndex].detailedProcesses.firstIndex(where: { $0.id == processID })
+        else { return }
+        detailedSteps[stepIndex].detailedProcesses.removeAll(where: { $0.id == processID })
     }
     
     func onMoveDetailedProcessUp(stepID: UUID, processID: UUID) {
-        
+        guard let stepIndex = detailedSteps.firstIndex(where: { $0.id == stepID }),
+              let processIndex = detailedSteps[stepIndex].detailedProcesses.firstIndex(where: { $0.id == processID })
+        else { return }
+        detailedSteps[stepIndex].detailedProcesses.move(fromOffsets: IndexSet(integer: processIndex), toOffset: processIndex - 1)
     }
     
     func onMoveDetailedProcessDown(stepID: UUID, processID: UUID) {
-        
+        guard let stepIndex = detailedSteps.firstIndex(where: { $0.id == stepID }),
+              let processIndex = detailedSteps[stepIndex].detailedProcesses.firstIndex(where: { $0.id == processID })
+        else { return }
+        detailedSteps[stepIndex].detailedProcesses.move(fromOffsets: IndexSet(integer: processIndex), toOffset: processIndex + 2)
     }
 }
