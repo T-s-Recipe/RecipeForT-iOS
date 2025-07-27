@@ -409,13 +409,13 @@ extension EditRecipeView {
                 }
                 
                 Group {
-                    decimalTextField("Qty", value: $ingredient.units[.quantity])
                     decimalTextField("Tbsp", value: $ingredient.units[.tablespoon])
                     decimalTextField("Tsp", value: $ingredient.units[.teaspoon])
                     decimalTextField("Cup", value: $ingredient.units[.cup])
                     decimalTextField("g", value: $ingredient.units[.gram])
                     decimalTextField("ml", value: $ingredient.units[.milliliters])
                     decimalTextField("oz", value: $ingredient.units[.ounce])
+                    decimalTextField("Qty", value: $ingredient.units[.quantity])
                 }
             }
         }
@@ -567,7 +567,10 @@ extension EditRecipeView {
                     .padding(16)
                 }
             }
-            .presentationDetents([.fraction(0.9999)])
         }
     }
+}
+
+#Preview {
+    EditRecipeView(recipe: nil, resolver: PreviewHelper.shared.resolver)
 }

@@ -20,14 +20,31 @@ struct RecipeGuideView: View {
                 .fill(.gray.opacity(0.3))
                 .padding(.vertical)
         }
-        .ignoresSafeArea(edges: .top)
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
             }
+            
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        
+                    } label: {
+                        Text("Edit")
+                    }
+                    
+                    Button {
+                        
+                    } label: {
+                        Text("Delete")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                }
+                .tint(.black)
+            }
         }
-        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
     }
 }
 

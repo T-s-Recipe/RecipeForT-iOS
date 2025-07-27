@@ -41,9 +41,9 @@ struct Recipe: Identifiable {
         cost: Decimal = .zero,
         cookingTime: Decimal = .zero,
         description: String = "",
-        ingredients: [Ingredient] = [],
-        sources: [Ingredient] = [],
-        detailedSteps: [CookingStep] = []
+        ingredients: [Ingredient] = [.init(name: "", units: .init())],
+        sources: [Ingredient] = [.init(name: "", units: .init())],
+        detailedSteps: [CookingStep] = [.init(title: "Step 1", detailedProcesses: [.init(description: "")])]
     ) {
         self.id = id
         self.authorID = authorID
