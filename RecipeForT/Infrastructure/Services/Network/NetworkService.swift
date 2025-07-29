@@ -56,7 +56,7 @@ final class NetworkService {
         case .statusCode(let response):
             print("Invalid response. code: \(response.statusCode)")
             return .invalidResponse
-        case .underlying(let error, let response):
+        case .underlying(let error, _):
             print("Underlying error")
             guard (error as NSError).code == NSURLErrorTimedOut else { return .networkFailure }
             return .timeout
