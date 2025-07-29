@@ -645,18 +645,25 @@ extension EditRecipeView {
                             .font(.headline)
                         
                         Text("When writing out detailed recipe steps, please follow this order:")
+                            .bulletPoint()
+                        
                         Text("List the ingredients starting with those that don't stick to the spoon, followed by those that do. (e.g. sugar, salt -> honey, soy sauce")
+                            .bulletPoint()
                         
                         Text("Measurement units")
                             .font(.headline)
                         
                         Text("1T: 1 tablespoon")
+                            .bulletPoint()
+                        
                         Text("1t: 1 teaspoon")
+                            .bulletPoint()
                         
                         Text("Recipe")
                             .font(.headline)
                         
                         Text("When writing a recipe, avoid writing long sentences. Break them down into shorter steps as much as possible.")
+                            .bulletPoint()
                     }
                     .padding(16)
                 }
