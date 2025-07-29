@@ -68,20 +68,24 @@ extension RecipeGuideView {
                 Text(recipe.name)
                     .font(.headline)
                 
-                HStack(spacing: 8) {
-                    Text("\(recipe.servingsCount)인분")
-                    
-                    Circle()
-                        .frame(width: 4, height: 4)
-                    
-                    Text("\(recipe.cost)원")
-                    
-                    Circle()
-                        .frame(width: 4, height: 4)
-                    
-                    Text("\(recipe.cookingTime)분")
+                if let servingsCount = recipe.servingsCount,
+                   let cost = recipe.cost,
+                   let cookingTime = recipe.cookingTime {
+                    HStack(spacing: 8) {
+                        Text("\(servingsCount)인분")
+                        
+                        Circle()
+                            .frame(width: 4, height: 4)
+                        
+                        Text("\(cost)원")
+                        
+                        Circle()
+                            .frame(width: 4, height: 4)
+                        
+                        Text("\(cookingTime)분")
+                    }
+                    .foregroundStyle(.gray)
                 }
-                .foregroundStyle(.gray)
                 
                 // TODO: 레시피 작성자 정보 비동기로 가져오기
                 Text("홍길동")
@@ -107,3 +111,34 @@ extension RecipeGuideView {
             .environmentObject(PreviewHelper.shared.router)
     }
 }
+
+/*
+ HStack(spacing: 12) {
+     Button {
+         viewModel.decreaseServingsCount()
+     } label: {
+         Image(systemName: "minus")
+     }
+     .background(
+         Circle()
+             .fill(.gray.opacity(0.3))
+             .frame(width: 24, height: 24)
+     )
+     .tint(.black)
+     
+     Text("\(viewModel.servings) \(viewModel.servings > 1 ? "Servings" : "Serving")")
+         .monospacedDigit()
+
+     Button {
+         viewModel.increaseServingsCount()
+     } label: {
+         Image(systemName: "plus")
+     }
+     .background(
+         Circle()
+             .fill(.gray.opacity(0.3))
+             .frame(width: 24, height: 24)
+     )
+     .tint(.black)
+ }
+ */

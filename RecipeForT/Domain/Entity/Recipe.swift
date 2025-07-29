@@ -18,11 +18,11 @@ struct Recipe: Identifiable {
     /// 대표 이미지 URL
     let imageURL: URL?
     /// n인분, 인당 식사 분량
-    let servingsCount: Decimal
+    let servingsCount: Decimal?
     /// 조리비용
-    let cost: Decimal
+    let cost: Decimal?
     /// 조리시간(분)
-    let cookingTime: Decimal
+    let cookingTime: Decimal?
     /// 레시피에 대한 설명
     let description: String
     /// 재료 목록
@@ -37,9 +37,9 @@ struct Recipe: Identifiable {
         authorID: UInt64 = .zero,
         name: String = "",
         imageURL: URL? = nil,
-        servingsCount: Decimal = .zero,
-        cost: Decimal = .zero,
-        cookingTime: Decimal = .zero,
+        servingsCount: Decimal? = nil,
+        cost: Decimal? = nil,
+        cookingTime: Decimal? = nil,
         description: String = "",
         ingredients: [Ingredient] = [.init(name: "", units: .init())],
         sources: [Ingredient] = [.init(name: "", units: .init())],

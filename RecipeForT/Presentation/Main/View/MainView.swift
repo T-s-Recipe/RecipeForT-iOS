@@ -73,20 +73,24 @@ extension MainView {
                         Text(recipe.name)
                             .font(.headline)
                         
-                        HStack(spacing: 8) {
-                            Text("\(recipe.servingsCount)serv")
-                            
-                            Circle()
-                                .frame(width: 4, height: 4)
-                            
-                            Text("$\(recipe.cost)")
-                            
-                            Circle()
-                                .frame(width: 4, height: 4)
-                            
-                            Text("\(recipe.cookingTime)min")
+                        if let servingsCount = recipe.servingsCount,
+                           let cost = recipe.cost,
+                           let cookingTime = recipe.cookingTime {
+                            HStack(spacing: 8) {
+                                Text("\(servingsCount)serv")
+                                
+                                Circle()
+                                    .frame(width: 4, height: 4)
+                                
+                                Text("$\(cost)")
+                                
+                                Circle()
+                                    .frame(width: 4, height: 4)
+                                
+                                Text("\(cookingTime)min")
+                            }
+                            .font(.subheadline)
                         }
-                        .font(.subheadline)
                         
                         Text("Author Name")
                             .font(.subheadline)
