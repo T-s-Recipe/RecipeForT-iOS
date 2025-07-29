@@ -11,17 +11,13 @@ import Swinject
 @Observable @MainActor
 final class RecipeEditor {
     var titleText: String
-    var servingsText: String {
-        didSet { synchronize(servingsText) }
-    }
+    var servingsText: String
     var costText: String
     var timeText: String
     var notesText: String
     var ingredients: [Ingredient]
     var sources: [Ingredient]
     var detailedSteps: [CookingStep]
-    
-    var servings: Decimal
     
     var isServingsTextFieldDisabled: Bool = false {
         didSet {
@@ -50,22 +46,14 @@ final class RecipeEditor {
     init(recipe: Recipe? = nil, resolver: Resolver) {
         let recipe = recipe ?? .sample
         titleText = recipe.name
-        servingsText = recipe.servingsCount == 0 ? "4" : recipe.servingsCount.description
-        costText = recipe.cost == 0 ? "" : recipe.cost.description
-        timeText = recipe.cookingTime == 0 ? "" : recipe.cookingTime.description
+        servingsText = recipe.servingsCount == 0 ? "4" : recipe.servingsCount?.description ?? ""
+        costText = recipe.cost == 0 ? "" : recipe.cost?.description ?? ""
+        timeText = recipe.cookingTime == 0 ? "" : recipe.cookingTime?.description ?? ""
         notesText = recipe.description
         ingredients = recipe.ingredients
-        servings = recipe.servingsCount
         sources = recipe.sources
         detailedSteps = recipe.detailedSteps
         self.recipeUploadUseCase = resolver.resolve(RecipeUploadUseCaseProtocol.self)!
-    }
-    
-    private func synchronize(_ servingsText: String) {
-        guard let decimal = Decimal(string: servingsText),
-              servings != decimal
-        else { return }
-        servings = decimal
     }
 }
 

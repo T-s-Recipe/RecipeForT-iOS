@@ -10,7 +10,6 @@ import Foundation
 protocol RecipeBaseInfoViewModelDelegate: AnyObject {
     var titleText: String { get set }
     var servingsText: String { get set }
-    var servings: Decimal { get set }
     var costText: String { get set }
     var timeText: String { get set }
     var notesText: String { get set }
@@ -28,10 +27,6 @@ final class RecipeBaseInfoViewModel {
     var servingsText: String {
         get { delegate?.servingsText ?? "" }
         set { delegate?.servingsText = newValue }
-    }
-    var servings: Decimal {
-        get { delegate?.servings ?? .zero }
-        set { delegate?.servings = newValue }
     }
     var costText: String {
         get { delegate?.costText ?? "" }
@@ -63,7 +58,6 @@ final class RecipeBaseInfoViewModel {
 
 protocol IngredientsInfoViewModelDelegate: AnyObject {
     var servingsText: String { get set }
-    var servings: Decimal { get set }
     var ingredients: [Ingredient] { get set }
     var sources: [Ingredient] { get set }
 }
@@ -73,10 +67,6 @@ final class IngredientsInfoViewModel {
     var servingsText: String {
         get { delegate?.servingsText ?? "" }
         set { delegate?.servingsText = newValue }
-    }
-    var servings: Decimal {
-        get { delegate?.servings ?? .zero }
-        set { delegate?.servings = newValue }
     }
     var ingredients: [Ingredient] {
         get { delegate?.ingredients ?? [] }
@@ -88,21 +78,6 @@ final class IngredientsInfoViewModel {
     }
     
     weak var delegate: IngredientsInfoViewModelDelegate?
-    
-    private let maxServings: Decimal = 100
-    private let minServings: Decimal = 0
-    
-    func increaseServingsCount() {
-        guard servings < maxServings else { return }
-        servings += 0.5
-        servingsText = servings.description
-    }
-    
-    func decreaseServingsCount() {
-        guard servings > minServings else { return }
-        servings -= 0.5
-        servingsText = servings.description
-    }
     
     func onAddIngredient() {
         ingredients.append(.init(name: "", units: .init()))
@@ -175,7 +150,7 @@ final class DetailedStepsInfoViewModel {
         guard let stepIndex = detailedSteps.firstIndex(where: { $0.id == stepID }),
               let processIndex = detailedSteps[stepIndex].detailedProcesses.firstIndex(where: { $0.id == processID })
         else { return }
-        detailedSteps[stepIndex].detailedProcesses.removeAll(where: { $0.id == processID })
+        detailedSteps[stepIndex].detailedProcesses.remove(at: processIndex)
     }
     
     func onMoveDetailedProcessUp(stepID: UUID, processID: UUID) {

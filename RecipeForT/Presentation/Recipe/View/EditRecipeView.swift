@@ -217,35 +217,6 @@ extension EditRecipeView {
                     .font(.title3.bold())
                     .padding(.top, 16)
                 
-                HStack(spacing: 12) {
-                    Button {
-                        viewModel.decreaseServingsCount()
-                    } label: {
-                        Image(systemName: "minus")
-                    }
-                    .background(
-                        Circle()
-                            .fill(.gray.opacity(0.3))
-                            .frame(width: 24, height: 24)
-                    )
-                    .tint(.black)
-                    
-                    Text("\(viewModel.servings) \(viewModel.servings > 1 ? "Servings" : "Serving")")
-                        .monospacedDigit()
-
-                    Button {
-                        viewModel.increaseServingsCount()
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .background(
-                        Circle()
-                            .fill(.gray.opacity(0.3))
-                            .frame(width: 24, height: 24)
-                    )
-                    .tint(.black)
-                }
-                
                 // MARK: - Basic ingredients
                 Section {
                     ScrollView(.horizontal, showsIndicators: false) {
