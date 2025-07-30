@@ -28,6 +28,8 @@ struct RecipeGuideView: View {
             IngredientSection(viewer: viewer)
             
             thickDivider
+            
+            DetailedStepsSection(steps: recipe.detailedSteps)
         }
         .navigationBarBackButtonHidden()
         .toolbar {
@@ -250,6 +252,56 @@ extension RecipeGuideView {
         
         private func cellBackgroundColor(for index: Int) -> Color {
             return index.isOdd ? .secondary.opacity(0.1) : .clear
+        }
+    }
+    
+    struct DetailedStepsSection: View {
+        let steps: [CookingStep]
+        
+        var body: some View {
+            LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
+                ForEach(steps) { step in
+                    stepView(step)
+                    
+                    thickDivider
+                }
+            }
+        }
+        
+        @ViewBuilder private func stepView(_ step: CookingStep) -> some View {
+            Section {
+                ForEach(step.detailedProcesses) { process in
+                    detailedProcessCell(process)
+                }
+                .padding()
+            } header: {
+                Text(step.title)
+                    .font(.body)
+                    .frame(maxWidth: .infinity)
+                    .safeAreaPadding(.top)
+            }
+        }
+        
+        @ViewBuilder private func detailedProcessCell(_ process: CookingDetailedProcess) -> some View {
+            VStack {
+                if let imageURL = process.imageURL {
+                    AsyncImage(url: imageURL)
+                }
+                
+                Text(process.description)
+                    .font(.title)
+                    .padding(.vertical, 80)
+                
+                Rectangle()
+                    .fill(.secondary.opacity(0.2))
+                    .frame(maxHeight: 2)
+            }
+        }
+        
+        private var thickDivider: some View {
+            Rectangle()
+                .fill(.gray.opacity(0.3))
+                .padding(.vertical)
         }
     }
 }
