@@ -28,7 +28,7 @@ final class PreviewHelper {
         authorID: 123,
         name: "Brocolli",
         imageURL: nil,
-        servingsCount: 3,
+        servingsCount: nil,
         cost: 4,
         cookingTime: 15,
         description: "기타 메모는 여기에.\n참고한 레시피 원본 출저 등의 내용 적으면 됨",
@@ -43,7 +43,9 @@ final class PreviewHelper {
     ]
     
     lazy var mockSteps: [CookingStep] = [
-        .init(title: "Step 1", detailedProcesses: detailedProcesses)
+        .init(title: "Step 1", detailedProcesses: detailedProcesses),
+        .init(title: "Step 2", detailedProcesses: detailedProcesses),
+        .init(title: "Step 3", detailedProcesses: detailedProcesses),
     ]
     
     lazy var detailedProcesses: [CookingDetailedProcess] = [
