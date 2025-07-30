@@ -65,7 +65,7 @@ enum Route: Routable {
         case .searchView: SearchingView()
         case .editRecipeView(let recipe): EditRecipeView(recipe: recipe, resolver: resolver)
         case .myPageView: PersonalView()
-        case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe)
+        case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe, resolver: resolver)
         case .loginView(let sectionType): LoginView(sectionType: sectionType)
         }
     }

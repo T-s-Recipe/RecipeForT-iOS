@@ -6,19 +6,28 @@
 //
 
 import SwiftUI
+import Swinject
 
 struct RecipeGuideView: View {
     @EnvironmentObject private var router: Router
+    @State private var viewer: RecipeViewer
     
-    let recipe: Recipe
+    private let recipe: Recipe
+    
+    init(recipe: Recipe, resolver: Resolver) {
+        self.recipe = recipe
+        viewer = RecipeViewer(recipe)
+    }
     
     var body: some View {
         ScrollView(.vertical) {
             RecipeInformationSection(recipe: recipe)
             
-            Rectangle()
-                .fill(.gray.opacity(0.3))
-                .padding(.vertical)
+            thickDivider
+            
+            IngredientSection(viewer: viewer)
+            
+            thickDivider
         }
         .navigationBarBackButtonHidden()
         .toolbar {
@@ -45,6 +54,12 @@ struct RecipeGuideView: View {
                 .tint(.black)
             }
         }
+    }
+    
+    private var thickDivider: some View {
+        Rectangle()
+            .fill(.gray.opacity(0.3))
+            .padding(.vertical)
     }
 }
 
@@ -99,46 +114,149 @@ extension RecipeGuideView {
     }
     
     struct IngredientSection: View {
+        @Bindable var viewer: RecipeViewer
+        
         var body: some View {
-            
+            VStack(spacing: 12) {
+                Text("Ingredients")
+                    .font(.title3.bold())
+                
+                if let servings = viewer.servings {
+                    HStack(spacing: 12) {
+                        Button {
+                            viewer.decreaseServing()
+                        } label: {
+                            Image(systemName: "minus")
+                        }
+                        .background(
+                            Circle()
+                                .fill(.gray.opacity(0.3))
+                                .frame(width: 24, height: 24)
+                        )
+                        .tint(.black)
+                        
+                        Text("\(servings) \(servings > 1 ? "Servings" : "Serving")")
+                            .monospacedDigit()
+                            .frame(maxWidth: 120)
+                        
+                        Button {
+                            viewer.increaseServing()
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .background(
+                            Circle()
+                                .fill(.gray.opacity(0.3))
+                                .frame(width: 24, height: 24)
+                        )
+                        .tint(.black)
+                    }
+                }
+                
+                VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Basic ingredients")
+                            .font(.headline)
+                        
+                        Rectangle()
+                            .frame(height: 2)
+                    }
+                    .padding([.top, .horizontal])
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(viewer.ingredients.indices, id: \.self) { index in
+                                cell(viewer.ingredients[index])
+                                    .id(index)
+                                    .background(
+                                        Rectangle()
+                                            .fill(cellBackgroundColor(for: index))
+                                    )
+                            }
+                        }
+                    }
+                    .contentMargins(.horizontal, 16, for: .automatic)
+                }
+                
+                VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Source")
+                            .font(.headline)
+                        
+                        Rectangle()
+                            .frame(height: 2)
+                    }
+                    .padding([.top, .horizontal])
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(viewer.sources.indices, id: \.self) { index in
+                                cell(viewer.sources[index])
+                                    .id(index)
+                                    .background(
+                                        Rectangle()
+                                            .fill(cellBackgroundColor(for: index))
+                                    )
+                            }
+                        }
+                    }
+                    .contentMargins(.horizontal, 16, for: .automatic)
+                }
+            }
+        }
+        
+        @ViewBuilder private func cell(_ item: Ingredient) -> some View {
+            VStack(alignment: .listRowSeparatorLeading, spacing: 0) {
+                LazyHStack(spacing: 16) {
+                    Text(item.name)
+                        .foregroundStyle(.primary)
+                    
+                    if let tablespoon = item.units.tablespoon {
+                        Text("\(tablespoon)Tbsp")
+                    }
+                    
+                    if let teaspoon = item.units.teaspoon {
+                        Text("\(teaspoon)tsp")
+                    }
+                    
+                    if let cup = item.units.cup {
+                        Text("\(cup)cup")
+                    }
+                    
+                    if let gram = item.units.gram {
+                        Text("\(gram)g")
+                    }
+                    
+                    if let milliliters = item.units.milliliters {
+                        Text("\(milliliters)ml")
+                    }
+                    
+                    if let ounce = item.units.ounce {
+                        Text("\(ounce)oz")
+                    }
+                    
+                    if let quantity = item.units.quantity {
+                        Text("\(quantity)qty")
+                    }
+                }
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 16)
+
+                Rectangle().fill(.secondary.opacity(0.3))
+                    .frame(height: 1)
+            }
+        }
+        
+        private func cellBackgroundColor(for index: Int) -> Color {
+            return index.isOdd ? .secondary.opacity(0.1) : .clear
         }
     }
 }
 
 #Preview {
     NavigationStack {
-        RecipeGuideView(recipe: PreviewHelper.shared.mockRecipe)
+        RecipeGuideView(recipe: PreviewHelper.shared.mockRecipe, resolver: PreviewHelper.shared.resolver)
             .environmentObject(PreviewHelper.shared.router)
     }
 }
-
-/*
- HStack(spacing: 12) {
-     Button {
-         viewModel.decreaseServingsCount()
-     } label: {
-         Image(systemName: "minus")
-     }
-     .background(
-         Circle()
-             .fill(.gray.opacity(0.3))
-             .frame(width: 24, height: 24)
-     )
-     .tint(.black)
-     
-     Text("\(viewModel.servings) \(viewModel.servings > 1 ? "Servings" : "Serving")")
-         .monospacedDigit()
-
-     Button {
-         viewModel.increaseServingsCount()
-     } label: {
-         Image(systemName: "plus")
-     }
-     .background(
-         Circle()
-             .fill(.gray.opacity(0.3))
-             .frame(width: 24, height: 24)
-     )
-     .tint(.black)
- }
- */
