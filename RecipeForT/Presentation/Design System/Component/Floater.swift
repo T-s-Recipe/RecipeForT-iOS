@@ -7,25 +7,46 @@
 
 import SwiftUI
 
-struct FloaterModifier: ViewModifier {
+struct FloaterItem {
     enum Role {
         case normal
         case warning
     }
     
+    let role: Role
+    let message: String
+    
+    init(role: Role = .normal, message: String) {
+        self.role = role
+        self.message = message
+    }
+}
+
+struct FloaterModifier: ViewModifier {
+    typealias Role = FloaterItem.Role
+    
     @Binding var isPresented: Bool
     
     let role: Role
-    let message: Text
+    let message: String
     
     init(
         _ isPresented: Binding<Bool>,
         role: Role = .normal,
-        message: any StringProtocol
+        message: String
     ) {
         self._isPresented = isPresented
         self.role = role
-        self.message = Text(message)
+        self.message = message
+    }
+    
+    init(item: Binding<FloaterItem?>) {
+        self._isPresented = Binding(
+            get: { item.wrappedValue != nil },
+            set: { if !$0 { item.wrappedValue = nil } }
+        )
+        self.role = item.wrappedValue?.role ?? .normal
+        self.message = item.wrappedValue?.message ?? ""
     }
     
     func body(content: Content) -> some View {
@@ -34,7 +55,7 @@ struct FloaterModifier: ViewModifier {
             
             if isPresented {
                 HStack(spacing: 10) {
-                    message
+                    Text(message)
                         .lineLimit(3)
                         .multilineTextAlignment(.leading)
                     

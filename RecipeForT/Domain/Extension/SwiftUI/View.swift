@@ -12,8 +12,12 @@ extension View {
     func floater(
         _ isPresented: Binding<Bool>,
         role: FloaterModifier.Role = .normal,
-        message: any StringProtocol
+        message: String
     ) -> some View {
         modifier(FloaterModifier(isPresented, role: role, message: message))
+    }
+    
+    func floater(_ item: Binding<FloaterItem?>) -> some View {
+        modifier(FloaterModifier(item: item))
     }
 }

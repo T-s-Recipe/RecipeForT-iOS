@@ -15,11 +15,13 @@ protocol RouterProtocol {
     var path: NavigationPath { get set }
     var sheet: Destination? { get set }
     var fullScreenCover: Destination? { get set }
+    var floater: FloaterItem? { get set }
     
     @ViewBuilder func view(to destination: Destination) -> Content
     func route(to destination: Destination)
     func dismiss()
     func popToRoot()
+    func presentFloater(role: FloaterItem.Role, message: String)
 }
 
 protocol Routable: Identifiable, Hashable {
@@ -89,6 +91,7 @@ final class Router: ObservableObject, RouterProtocol {
     @Published var path = NavigationPath()
     @Published var sheet: Destination?
     @Published var fullScreenCover: Destination?
+    @Published var floater: FloaterItem?
     
     private var isModalPresented: Bool {
         sheet != nil || fullScreenCover != nil
@@ -149,5 +152,10 @@ extension Router {
         
         guard path.isEmpty == false else { return }
         path.removeLast(path.count)
+    }
+    
+    func presentFloater(role: FloaterItem.Role = .normal, message: String) {
+        let floaterItem = FloaterItem(role: role, message: message)
+        self.floater = floaterItem
     }
 }

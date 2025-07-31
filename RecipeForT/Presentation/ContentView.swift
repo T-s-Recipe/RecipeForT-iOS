@@ -35,8 +35,6 @@ struct ContentView: View {
     
     var body: some View {
         NavigationStack(path: $router.path) {
-            @Bindable var tabSelector = tabSelector
-            
             TabView(selection: $tabSelector.currentTab) {
                 Tab(value: TabSelection.main) {
                     router.view(to: .mainView)
@@ -84,6 +82,7 @@ struct ContentView: View {
                 router.route(to: .editRecipeView(recipe: nil))
             }
         }
+        .floater($router.floater)
         .environmentObject(router)
     }
 }
