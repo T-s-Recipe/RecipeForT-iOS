@@ -48,7 +48,7 @@ enum Route: Routable {
     case editRecipeView(recipe: Recipe?)
     case myPageView
     case recipeGuideView(Recipe)
-    case loginView(LoginView.SectionType)
+    case loginView
     
     var presentingType: PresentingType {
         switch self {
@@ -68,7 +68,7 @@ enum Route: Routable {
         case .editRecipeView(let recipe): EditRecipeView(recipe: recipe, resolver: resolver)
         case .myPageView: PersonalView()
         case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe, resolver: resolver)
-        case .loginView(let sectionType): LoginView(sectionType: sectionType)
+        case .loginView: LoginView()
         }
     }
 }

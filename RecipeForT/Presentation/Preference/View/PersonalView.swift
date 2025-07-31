@@ -102,7 +102,7 @@ extension PersonalView {
                 cell()
                 
                 Button {
-                    router.route(to: .loginView(.signIn))
+                    router.route(to: .loginView)
                 } label: {
                     Text("See more")
                         .frame(maxWidth: .infinity)

@@ -7,157 +7,97 @@
 
 import SwiftUI
 import AuthenticationServices
+import GoogleSignInSwift
 
 struct LoginView: View {
-    @State private var sectionType: SectionType
-    
-    init(sectionType: SectionType) {
-        self.sectionType = sectionType
-    }
+    @EnvironmentObject private var router: Router
     
     var body: some View {
         VStack {
-            ScrollView(.vertical) {
-                Header(sectionType: sectionType)
-                
-                ContentSection(sectionType: $sectionType)
-            }
-            .padding(.horizontal)
+            Header()
             
-            if sectionType == .signUp {
-                Footer()
-            }
+            Spacer()
+            
+            LoginButtonsArea()
+            
+            Spacer()
+            Spacer()
         }
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                BackButton()
+                BackButton(.xmark)
             }
         }
-    }
-}
-
-// MARK: - Nested Types
-extension LoginView {
-    enum SectionType {
-        case signIn, signUp
-    }
-    
-    enum SignUpStep {
-        case email, userID
     }
 }
 
 // MARK: - Subviews
 extension LoginView {
     struct Header: View {
-        let sectionType: SectionType
-        
         var body: some View {
             VStack(spacing: 8) {
-                Text(sectionType == .signIn ? "Log in" : "Sign up for free")
+                Text("Log in")
                     .font(.title.weight(.medium))
                 
-                Text(sectionType == .signIn ? "Welcome back !" : "T's recipe")
+                Text("Welcome back !")
             }
-            .frame(height: 150)
+            .safeAreaPadding(.top, 98)
         }
     }
     
-    struct ContentSection: View {
-        @Binding var sectionType: SectionType
-        @FocusState private var isFocused: Bool
-        @State private var signUpStep: SignUpStep = .email
-        @State private var text = String()
+    struct LoginButtonsArea: View {
+        @EnvironmentObject private var router: Router
         
-        init(sectionType: Binding<SectionType>) {
-            self._sectionType = sectionType
-        }
+        @State private var isRegistrationNeeded: Bool = true
+        @FocusState private var isFocused: Bool
         
         var body: some View {
             VStack(spacing: 12) {
-                SignInWithAppleButton(.continue) { request in
-                    
-                } onCompletion: { result in
-                    
-                }
-                .signInWithAppleButtonStyle(.whiteOutline)
-                .frame(height: 44)
-                
-                SignInWithAppleButton(.continue) { request in
-                    
-                } onCompletion: { result in
-                    
-                }
-                .signInWithAppleButtonStyle(.whiteOutline)
-                .frame(height: 44)
-                
-                Text("OR")
-                
-                HStack {
-                    Text(signUpStep == .email ? "Email address" : "User ID")
-                        .foregroundStyle(.gray)
-                    
-                    Spacer()
-                }
-                
-                RoundedTextField("(e.g) tsrecipe@gmail.com", text: $text, $isFocused)
-                
-                Button {
-                    proceedSignUpStep()
-                } label: {
-                    Text("Continue")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical)
-                        .background(.gray)
-                        .clipShape(RoundedRectangle(cornerRadius: 5))
-                }
-                .tint(.white)
-                
-                HStack {
-                    Text(sectionType == .signIn ? "Don't have an account?" : "Already have an account?")
-                    
-                    Button {
-                        toggleSectionType()
-                    } label: {
-                        Text(sectionType == .signIn ? "Sign up" : "Log in")
+                if isRegistrationNeeded {
+                    VStack(spacing: 12) {
+                        Text("User name")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        RoundedTextField("Choose a username", text: .constant(""), $isFocused)
+                        
+                        Button {
+                            
+                        } label: {
+                            Text("Continue")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        }
+                        .buttonStyle(RoundedProminentButtonStyle(false, .white, .black, false))
                     }
-                }
-            }
-        }
-        
-        private func toggleSectionType() {
-            sectionType = sectionType == .signIn ? .signUp : .signIn
-        }
-        
-        private func proceedSignUpStep() {
-            signUpStep = signUpStep == .email ? .userID : .email
-        }
-    }
-    
-    struct Footer: View {
-        var body: some View {
-            HStack {
-                Link(destination: URL(string: "임시")!) {
-                    Text("Terms of Use")
-                        .underline()
+                } else {
+                    GoogleSignInButton(style: .wide) {
+                        
+                    }
+                    .frame(height: 44)
+                    
+                    SignInWithAppleButton(.continue) { request in
+                        
+                    } onCompletion: { result in
+                        
+                    }
+                    .signInWithAppleButtonStyle(.whiteOutline)
+                    .frame(height: 44)
                 }
                 
-                Text("|")
-                
-                Link(destination: URL(string: "임시")!) {
-                    Text("Privacy Policy")
-                        .underline()
+                Button("딸깍") {
+                    isRegistrationNeeded.toggle()
                 }
             }
-            .tint(.gray)
+            .padding(.horizontal)
         }
     }
 }
 
 #Preview {
     NavigationStack {
-        LoginView(sectionType: .signIn)
+        LoginView()
     }
     .environmentObject(PreviewHelper.shared.router)
 }
