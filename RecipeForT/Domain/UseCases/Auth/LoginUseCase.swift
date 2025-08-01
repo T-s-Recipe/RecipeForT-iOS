@@ -8,7 +8,7 @@
 import Foundation
 
 protocol LoginUseCaseProtocol {
-    func login(authorizationCode: Data)
+    func execute(authorizationCode: Data, provider: OAuthProvider, email: String?, name: String?) async throws
 }
 
 final class LoginUseCase {
@@ -21,7 +21,7 @@ final class LoginUseCase {
 
 // MARK: - LoginUseCaseProtocol Conformation
 extension LoginUseCase: LoginUseCaseProtocol {
-    func login(authorizationCode: Data) {
+    func execute(authorizationCode: Data, provider: OAuthProvider, email: String?, name: String?) async throws {
         // TODO: WIP
     }
 }
