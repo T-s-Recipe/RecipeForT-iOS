@@ -23,7 +23,7 @@ enum NetworkServiceError: Error {
 final class NetworkService {
     private let provider = MoyaProvider<MultiTarget>()
     
-    private func performResult(_ result: Result<Response, MoyaError>) throws(NetworkServiceError) -> Data {
+    private func performResult(_ result: Result<Response, MoyaError>) throws(NetworkServiceError) -> Data? {
         switch result {
         case .success(let response):
             return try performResponse(response)
@@ -32,7 +32,7 @@ final class NetworkService {
         }
     }
     
-    private func performResponse(_ response: Response) throws(NetworkServiceError) -> Data {
+    private func performResponse(_ response: Response) throws(NetworkServiceError) -> Data? {
         switch response.statusCode {
         case 200..<300: return response.data
         case 401: throw .unauthorized
@@ -74,11 +74,9 @@ final class NetworkService {
 extension NetworkService: NetworkServiceProtocol {
     func request<T: TargetType>(_ endpoint: T) async throws -> Data {
         return try await withCheckedThrowingContinuation { continuation in
-            provider.request(MultiTarget(endpoint)) {[weak self] result in
-                guard let self else { return }
-                
+            provider.request(MultiTarget(endpoint)) { [weak self] result in
                 do {
-                    let data = try performResult(result)
+                    guard let data = try self?.performResult(result) else { return }
                     continuation.resume(returning: data)
                 } catch {
                     continuation.resume(throwing: error)
@@ -88,6 +86,15 @@ extension NetworkService: NetworkServiceProtocol {
     }
     
     func request<T: TargetType>(_ endpoint: T) async throws {
-        
+        return try await withCheckedThrowingContinuation { continuation in
+            provider.request(MultiTarget(endpoint)) { [weak self] result in
+                do {
+                    _ = try self?.performResult(result)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
     }
 }
