@@ -1,5 +1,5 @@
 //
-//  UserRepository.swift
+//  MemberRepository.swift
 //  RecipeForT
 //
 //  Created by Swain Yun on 7/13/25.
@@ -7,12 +7,12 @@
 
 import Foundation
 
-final class UserRepository {
+final class MemberRepository {
     
 }
 
 // MARK: - UserRepositoryProtocol Conformation
-extension UserRepository: UserRepositoryProtocol {
+extension MemberRepository: MemberRepositoryProtocol {
     func create() async throws {
         
     }
