@@ -12,10 +12,10 @@ protocol LoginUseCaseProtocol {
 }
 
 final class LoginUseCase {
-    private let userRepository: UserRepositoryProtocol
+    private let memberRepository: MemberRepositoryProtocol
     
-    init(userRepository: UserRepositoryProtocol) {
-        self.userRepository = userRepository
+    init(memberRepository: MemberRepositoryProtocol) {
+        self.memberRepository = memberRepository
     }
 }
 

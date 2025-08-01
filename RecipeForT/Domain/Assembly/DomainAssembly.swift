@@ -33,14 +33,14 @@ struct DomainAssembly: Assembly {
         }
         
         container.register(LoginUseCaseProtocol.self) { resolver in
-            guard let userRepository = resolver.resolve(UserRepositoryProtocol.self) else {
-                let userRepository = UserRepository()
-                container.register(UserRepositoryProtocol.self) { _ in
-                    userRepository
+            guard let memberRepository = resolver.resolve(MemberRepositoryProtocol.self) else {
+                let memberRepository = MemberRepository()
+                container.register(MemberRepositoryProtocol.self) { _ in
+                    memberRepository
                 }
-                return LoginUseCase(userRepository: userRepository)
+                return LoginUseCase(memberRepository: memberRepository)
             }
-            return LoginUseCase(userRepository: userRepository)
+            return LoginUseCase(memberRepository: memberRepository)
         }
     }
 }
