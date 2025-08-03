@@ -10,8 +10,15 @@ import Swinject
 
 struct InfrastructureAssembly: Assembly {
     func assemble(container: Container) {
-        container.register(NetworkServiceProtocol.self) { _ in
-            NetworkService()
+        container.register(NetworkServiceProtocol.self) { resolver in
+            guard let tokenStorage = resolver.resolve(TokenStorageProtocol.self) else {
+                let tokenStorage = TokenStorage()
+                container.register(TokenStorageProtocol.self) { _ in
+                    tokenStorage
+                }
+                return NetworkService(tokenStorage: tokenStorage)
+            }
+            return NetworkService(tokenStorage: tokenStorage)
         }
         .inObjectScope(.container)
     }
