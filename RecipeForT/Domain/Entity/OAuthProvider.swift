@@ -18,4 +18,15 @@ enum OAuthProvider {
         case .google: "GOOGLE"
         }
     }
+    
+    init?(identifier: String) {
+        switch identifier {
+        case "APPLE":
+            self = .apple
+        case "GOOGLE":
+            self = .google
+        default:
+            return nil
+        }
+    }
 }
