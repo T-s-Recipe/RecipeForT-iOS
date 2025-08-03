@@ -10,19 +10,39 @@ import Moya
 
 enum Endpoint {
     // MARK: - Auth
-    case signIn(SignInDTO.Request)                                                                              // 사용자 로그인
-    case reissueToken(ReissueTokenDTO.Request)                                                                  // 토큰 재발급
-    case logout(LogoutDTO.Request)                                                                              // 사용자 로그아웃
+    case signIn(SignInRequestDTO)                                                                               // 사용자 로그인
+    case reissueToken(TokenReissueRequestDTO)                                                                   // 토큰 재발급
+    case logout(LogoutRequestDTO)                                                                               // 사용자 로그아웃
     
     // MARK: - Member
     case fetchMemberInfo(id: String?, providerID: String?, authID: String?)                                     // 회원정보 단건 조회
-    case register(RegisterDTO.Request)                                                                          // 회원가입
+    case register(SignUpRequestDTO)                                                                             // 회원가입
     case fetchRandomNickname                                                                                    // 랜덤 닉네임 조회
     
     // MARK: - Recipe
 //    case uploadRecipe
     case fetchRecipeDetail(recipeID: String)                                                                    // 레시피 단건 조회
     case fetchRecipeList(nextPageID: String?, limit: Int32)                                                     // 페이지네이션 레시피 목록 조회
+}
+
+extension Endpoint {
+    var usingToken: Bool {
+        switch self {
+        case .fetchMemberInfo:
+            true
+        default:
+            false
+        }
+    }
+    
+    var receivingToken: Bool {
+        switch self {
+        case .signIn, .reissueToken:
+            true
+        default:
+            false
+        }
+    }
 }
 
 // MARK: - TargetType Conformation
@@ -86,5 +106,16 @@ extension Endpoint: TargetType {
     
     var headers: [String : String]? {
         nil
+    }
+    
+    var validationType: ValidationType {
+        .successCodes
+    }
+}
+
+// MARK: - AccessTokenAuthorizable Conformation
+extension Endpoint: AccessTokenAuthorizable {
+    var authorizationType: Moya.AuthorizationType? {
+        usingToken ? .bearer : .none
     }
 }

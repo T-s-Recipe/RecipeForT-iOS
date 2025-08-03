@@ -21,25 +21,13 @@ enum NetworkServiceError: Error {
 }
 
 final class NetworkService {
-    private let provider = MoyaProvider<MultiTarget>()
+    private let provider: MoyaProvider<MultiTarget>
     
-    private func performResult(_ result: Result<Response, MoyaError>) throws(NetworkServiceError) -> Data? {
-        switch result {
-        case .success(let response):
-            return try performResponse(response)
-        case .failure(let error):
-            throw mapError(error)
-        }
-    }
-    
-    private func performResponse(_ response: Response) throws(NetworkServiceError) -> Data? {
-        switch response.statusCode {
-        case 200..<300: return response.data
-        case 401: throw .unauthorized
-        case 404: throw .notFound
-        case 500..<600: throw .serverError
-        default: throw .invalidResponse
-        }
+    init(tokenStorage: TokenStorageProtocol) {
+        let interceptor = TokenInterceptor(tokenStorage: tokenStorage)
+        let session = Session(interceptor: interceptor)
+        let plugins = [TokenManagerPlugin(tokenStorage: tokenStorage)]
+        self.provider = MoyaProvider<MultiTarget>(session: session, plugins: plugins)
     }
     
     private func mapError(_ error: MoyaError) -> NetworkServiceError {
@@ -72,28 +60,17 @@ final class NetworkService {
 
 // MARK: - NetworkServiceProtocol Conformation
 extension NetworkService: NetworkServiceProtocol {
-    func request<T: TargetType>(_ endpoint: T) async throws -> Data {
-        return try await withCheckedThrowingContinuation { continuation in
-            provider.request(MultiTarget(endpoint)) { [weak self] result in
-                do {
-                    guard let data = try self?.performResult(result) else { return }
-                    continuation.resume(returning: data)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+    func request<T>(_ endpoint: T) async throws -> Response where T: TargetType {
+        try await provider.asyncRequest(MultiTarget(endpoint))
     }
-    
-    func request<T: TargetType>(_ endpoint: T) async throws {
-        return try await withCheckedThrowingContinuation { continuation in
-            provider.request(MultiTarget(endpoint)) { [weak self] result in
-                do {
-                    _ = try self?.performResult(result)
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
+}
+
+// MARK: - MoyaProvider + HelperMethods
+extension MoyaProvider {
+    func asyncRequest(_ target: Target) async throws -> Response {
+        try await withCheckedThrowingContinuation { continuation in
+            request(target) { result in
+                continuation.resume(with: result)
             }
         }
     }
