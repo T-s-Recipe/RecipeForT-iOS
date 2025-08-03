@@ -14,8 +14,10 @@ private enum TokenStorageError: Error {
     case failedCasting
 }
 
-final actor TokenStorage {
+final class TokenStorage {
     private let bundleIdentifier: String? = Bundle.main.bundleIdentifier
+    
+    private let lock: NSLock = NSLock()
     
     private func _create(_ data: Data, in query: Query) throws {
         var query = query
@@ -87,6 +89,9 @@ extension TokenStorage {
 // MARK: TokenStorage Conformation
 extension TokenStorage: TokenStorageProtocol {
     func store(_ data: Data) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        
         let query = try makeQuery()
         
         do {
@@ -99,6 +104,9 @@ extension TokenStorage: TokenStorageProtocol {
     }
     
     func fetch() throws -> Data {
+        lock.lock()
+        defer { lock.unlock() }
+        
         let query = try makeQuery()
         let reference = try _read(query)
         let data = try convert(reference)
@@ -106,6 +114,9 @@ extension TokenStorage: TokenStorageProtocol {
     }
     
     func delete() throws {
+        lock.lock()
+        defer { lock.unlock() }
+        
         let query = try makeQuery()
         try _delete(query)
     }
