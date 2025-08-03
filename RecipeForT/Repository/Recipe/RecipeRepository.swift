@@ -8,7 +8,7 @@
 import Foundation
 
 final class RecipeRepository {
-    
+    private var recipes: [Recipe] = []
 }
 
 // MARK: - RecipeRepositoryProtocol Conformation

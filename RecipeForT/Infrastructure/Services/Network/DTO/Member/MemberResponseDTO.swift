@@ -20,4 +20,13 @@ struct MemberResponseDTO: Decodable {
         case providerIdentifier = "oauthProvider"
         case authID = "oauthId"
     }
+    
+    func toEntity() -> Member {
+        .init(
+            id: id,
+            nickname: nickname,
+            provider: OAuthProvider(identifier: providerIdentifier)!,
+            authorizationCode: Data(base64Encoded: authID)!
+        )
+    }
 }

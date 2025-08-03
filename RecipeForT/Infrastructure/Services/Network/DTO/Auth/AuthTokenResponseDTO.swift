@@ -10,4 +10,8 @@ import Foundation
 struct AuthTokenResponseDTO: Decodable {
     let accessToken: String
     let refreshToken: String
+    
+    func toEntity() -> Tokens {
+        .init(accessToken: accessToken, refreshToken: refreshToken)
+    }
 }
