@@ -46,7 +46,32 @@ final class LoginViewModel {
 // MARK: - Interfaces
 extension LoginViewModel {
     func signInWithGoogle(_ result: Result<GIDSignInResult, any Error>) {
-        
+        switch result {
+        case .success(let auth):
+            tasks[#function]?.cancel()
+            
+            guard let idToken = auth.user.idToken?.tokenString,
+                  let authCode = Data(base64Encoded: idToken)
+            else { return }
+            let name = auth.user.profile?.name
+            let email = auth.user.profile?.email
+            
+            let task = Task {
+                do {
+                    self.currentAttemptRecord = .init(authCode: authCode, provider: .google, name: name, email: email)
+                    let authenticationState = try await memberRepository.signIn(authCode: authCode, provider: .google, name: name, email: email)
+                    await prepareSignUpSquence(authenticationState)
+                    self.authenticationState = authenticationState
+                } catch {
+                    floaterItem = .init(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+                }
+            }
+            
+            tasks[#function] = task
+            
+        case .failure:
+            floaterItem = .init(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+        }
     }
     
     func signInWithApple(_ result: Result<ASAuthorization, any Error>) {
