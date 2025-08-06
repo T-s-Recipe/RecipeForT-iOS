@@ -15,4 +15,11 @@ enum AuthenticationState {
     case pendingRegistration(tokens: Tokens)
     /// 로그인
     case loggedIn(member: Member)
+    
+    var isRegistrationNeeded: Bool {
+        switch self {
+        case .loggedOut, .loggedIn: return false
+        case .pendingRegistration: return true
+        }
+    }
 }

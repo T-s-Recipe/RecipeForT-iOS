@@ -22,6 +22,11 @@ struct FloaterItem {
     }
 }
 
+// MARK: - Equatable Conformation
+extension FloaterItem: Equatable {
+    
+}
+
 struct FloaterModifier: ViewModifier {
     typealias Role = FloaterItem.Role
     

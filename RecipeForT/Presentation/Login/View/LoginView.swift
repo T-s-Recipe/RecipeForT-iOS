@@ -7,10 +7,17 @@
 
 import SwiftUI
 import AuthenticationServices
-import GoogleSignInSwift
+import GoogleSignIn
+import Swinject
 
 struct LoginView: View {
     @EnvironmentObject private var router: Router
+    
+    @State private var viewModel: LoginViewModel
+    
+    init(resolver: Resolver) {
+        self.viewModel = LoginViewModel(resolver: resolver)
+    }
     
     var body: some View {
         VStack {
@@ -18,7 +25,7 @@ struct LoginView: View {
             
             Spacer()
             
-            LoginButtonsArea()
+            LoginButtonsArea(viewModel)
             
             Spacer()
             Spacer()
@@ -28,6 +35,10 @@ struct LoginView: View {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton(.xmark)
             }
+        }
+        .onChange(of: viewModel.floaterItem) { _, newValue in
+            guard let newValue else { return }
+            router.presentFloater(role: newValue.role, message: newValue.message)
         }
     }
 }
@@ -48,18 +59,21 @@ extension LoginView {
     
     struct LoginButtonsArea: View {
         @EnvironmentObject private var router: Router
-        
-        @State private var isRegistrationNeeded: Bool = true
         @FocusState private var isFocused: Bool
+        @Bindable var viewModel: LoginViewModel
+        
+        init(_ viewModel: LoginViewModel) {
+            self.viewModel = viewModel
+        }
         
         var body: some View {
             VStack(spacing: 12) {
-                if isRegistrationNeeded {
+                if viewModel.isPendingRegistration {
                     VStack(spacing: 12) {
                         Text("User name")
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
-                        RoundedTextField("Choose a username", text: .constant(""), $isFocused)
+                        RoundedTextField(viewModel.temporalNickname, text: $viewModel.nicknameFieldText, $isFocused)
                         
                         Button {
                             
@@ -72,22 +86,18 @@ extension LoginView {
                         .buttonStyle(RoundedProminentButtonStyle(false, .white, .black, false))
                     }
                 } else {
-                    GoogleSignInButton(style: .wide) {
-                        
+                    SignInWithGoogleButton(.continue) { result in
+                        viewModel.signInWithGoogle(result)
                     }
-                    .frame(height: 44)
                     
                     SignInWithAppleButton(.continue) { request in
-                        
+                        request.nonce = UUID().uuidString
+                        request.requestedScopes = [.email, .fullName]
                     } onCompletion: { result in
-                        
+                        viewModel.signInWithApple(result)
                     }
                     .signInWithAppleButtonStyle(.whiteOutline)
                     .frame(height: 44)
-                }
-                
-                Button("딸깍") {
-                    isRegistrationNeeded.toggle()
                 }
             }
             .padding(.horizontal)
@@ -97,7 +107,7 @@ extension LoginView {
 
 #Preview {
     NavigationStack {
-        LoginView()
+        LoginView(resolver: PreviewHelper.shared.resolver)
     }
     .environmentObject(PreviewHelper.shared.router)
 }

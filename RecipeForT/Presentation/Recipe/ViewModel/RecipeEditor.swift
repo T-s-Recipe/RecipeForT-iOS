@@ -41,7 +41,7 @@ final class RecipeEditor {
     private let maxServings: Decimal = 100
     let minServings: Decimal = 0
     
-    private let recipeUploadUseCase: RecipeUploadUseCaseProtocol
+//    private let recipeUploadUseCase: RecipeUploadUseCaseProtocol
     
     init(recipe: Recipe? = nil, resolver: Resolver) {
         let recipe = recipe ?? .sample
@@ -53,7 +53,7 @@ final class RecipeEditor {
         ingredients = recipe.ingredients
         sources = recipe.sources
         detailedSteps = recipe.detailedSteps
-        self.recipeUploadUseCase = resolver.resolve(RecipeUploadUseCaseProtocol.self)!
+//        self.recipeUploadUseCase = resolver.resolve(RecipeUploadUseCaseProtocol.self)!
     }
 }
 
