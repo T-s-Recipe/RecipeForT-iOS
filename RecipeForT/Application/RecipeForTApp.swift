@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Swinject
+import GoogleSignIn
 
 @main
 struct RecipeForTApp: App {
@@ -23,6 +24,9 @@ struct RecipeForTApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(resolver: resolver)
+                .onOpenURL { url in
+                    GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 }
