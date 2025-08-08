@@ -39,7 +39,7 @@ final class RecipeEditor {
     }
     
     private let maxServings: Decimal = 100
-    let minServings: Decimal = 0
+    private let minServings: Decimal = 0
     
 //    private let recipeUploadUseCase: RecipeUploadUseCaseProtocol
     
