@@ -20,7 +20,7 @@ enum Endpoint {
     case fetchRandomNickname                                                                                    // 랜덤 닉네임 조회
     
     // MARK: - Recipe
-//    case uploadRecipe
+    case uploadRecipe(dtoData: Data, image: Data?)                                                              // 레시피 등록
     case fetchRecipeDetail(recipeID: String)                                                                    // 레시피 단건 조회
     case fetchRecipeList(nextPageID: String?, limit: Int32)                                                     // 페이지네이션 레시피 목록 조회
 }
@@ -28,7 +28,7 @@ enum Endpoint {
 extension Endpoint {
     var usingToken: Bool {
         switch self {
-        case .fetchMemberInfo:
+        case .fetchMemberInfo, .uploadRecipe:
             true
         default:
             false
@@ -62,6 +62,7 @@ extension Endpoint: TargetType {
         case .register: "/members"
         case .fetchRandomNickname: "/members/nickname"
             
+        case .uploadRecipe: "/recipes"
         case .fetchRecipeDetail(let recipeID): "/recipes/\(recipeID)"
         case .fetchRecipeList: "/recipes/recent"
         }
@@ -70,7 +71,7 @@ extension Endpoint: TargetType {
     var method: Moya.Method {
         switch self {
         case .fetchMemberInfo, .fetchRandomNickname, .fetchRecipeDetail, .fetchRecipeList: .get
-        case .signIn, .reissueToken, .logout, .register: .post
+        case .signIn, .reissueToken, .logout, .register, .uploadRecipe: .post
         }
     }
     
@@ -94,6 +95,10 @@ extension Endpoint: TargetType {
         case .fetchRandomNickname:
             return .requestPlain
             
+        case .uploadRecipe(let dtoData, let image):
+            var formData = [MultipartFormData]()
+            formData.append(.init(provider: .data(dtoData), name: "request"))
+            if let image { formData.append(.init(provider: .data(image), name: "imageFile")) }
         case .fetchRecipeDetail:
             return .requestPlain
         case .fetchRecipeList(let nextPageID, let limit):

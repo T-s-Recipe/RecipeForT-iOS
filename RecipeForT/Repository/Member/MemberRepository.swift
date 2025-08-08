@@ -75,6 +75,7 @@ extension MemberRepository: MemberRepositoryProtocol {
             let responseDTO = try decoder.decode(MemberResponseDTO.self, from: response.data)
             let member = responseDTO.toEntity()
             authenticationState = .loggedIn(member: member)
+            UserDefaults.standard.setValue(member.id, forKey: AppStorageKey.userID)
             return authenticationState
         } catch let error as NetworkServiceError {
             throw MemberRepositoryError.networkError(error)
@@ -83,7 +84,20 @@ extension MemberRepository: MemberRepositoryProtocol {
         }
     }
     
+    func fetchMember() async throws -> AuthenticationState {
+        guard authenticationState == .loggedOut else { return authenticationState }
+        
+        guard let userID = UserDefaults.standard.string(forKey: AppStorageKey.userID) else {
+            authenticationState = .loggedOut
+            return authenticationState
+        }
+        
+        return try await fetchMember(id: userID)
+    }
+    
     func fetchMember(id: String) async throws -> AuthenticationState {
+        guard authenticationState == .loggedOut else { return authenticationState }
+        
         let endpoint = Endpoint.fetchMemberInfo(id: id, providerID: nil, authID: nil)
         
         do {
@@ -100,6 +114,8 @@ extension MemberRepository: MemberRepositoryProtocol {
     }
     
     func fetchMember(authCode: Data, provider: OAuthProvider) async throws -> AuthenticationState {
+        guard authenticationState == .loggedOut else { return authenticationState }
+        
         let endpoint = Endpoint.fetchMemberInfo(id: nil, providerID: provider.identifier, authID: authCode.base64EncodedString())
         
         do {

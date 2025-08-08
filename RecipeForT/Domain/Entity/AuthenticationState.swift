@@ -23,3 +23,19 @@ enum AuthenticationState {
         }
     }
 }
+
+// MARK: - Equatable Conformation
+extension AuthenticationState: Equatable {
+    static func == (lhs: AuthenticationState, rhs: AuthenticationState) -> Bool {
+        switch (lhs, rhs) {
+        case (.loggedOut, .loggedOut):
+            return true
+        case (.pendingRegistration(let lhsTokens), .pendingRegistration(let rhsTokens)):
+            return lhsTokens.accessToken == rhsTokens.accessToken
+        case (.loggedIn(let lhsMember), .loggedIn(let rhsMember)):
+            return lhsMember.id == rhsMember.id
+        default:
+            return false
+        }
+    }
+}
