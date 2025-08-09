@@ -24,8 +24,8 @@ final class PreviewHelper {
     }()
     
     lazy var mockRecipe = Recipe(
-        id: 0,
-        authorID: 123,
+        id: UUID().uuidString,
+        authorID: UUID().uuidString,
         name: "Brocolli",
         imageURL: nil,
         servingsCount: nil,

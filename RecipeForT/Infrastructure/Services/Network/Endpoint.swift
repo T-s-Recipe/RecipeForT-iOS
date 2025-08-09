@@ -99,6 +99,7 @@ extension Endpoint: TargetType {
             var formData = [MultipartFormData]()
             formData.append(.init(provider: .data(dtoData), name: "request"))
             if let image { formData.append(.init(provider: .data(image), name: "imageFile")) }
+            return .uploadMultipart(formData)
         case .fetchRecipeDetail:
             return .requestPlain
         case .fetchRecipeList(let nextPageID, let limit):

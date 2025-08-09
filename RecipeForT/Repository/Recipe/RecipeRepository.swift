@@ -32,7 +32,7 @@ enum RecipeRepositoryError: Error {
 }
 
 final class RecipeRepository {
-    private var recipes: [Recipe] = []
+    private var recipes: [String: Recipe] = [:]
     
     private let networkService: NetworkServiceProtocol
     private let decoder: JSONDecoder
@@ -79,7 +79,10 @@ extension RecipeRepository: RecipeRepositoryProtocol {
             let dtoData = try encoder.encode(requestDTO)
             let endpoint = Endpoint.uploadRecipe(dtoData: dtoData, image: image)
             let response = try await networkService.request(endpoint)
-//            let responseDTO = try decoder.decode
+            let responseDTO = try decoder.decode(CreateRecipeResponseDTO.self, from: response.data)
+            let recipe = responseDTO.toEntity()
+            recipes[recipe.id] = recipe
+            return recipe
         } catch is EncodingError {
             throw RecipeRepositoryError.encodingFailed
         } catch is DecodingError {

@@ -20,6 +20,11 @@ struct StepDTO: Codable {
         self.title = title
         self.process = process.map { .init(content: $0.description) }
     }
+    
+    func toEntity() -> CookingStep {
+        let processes: [CookingDetailedProcess] = process.map { .init(description: $0.content) }
+        return .init(title: title, detailedProcesses: processes)
+    }
 }
 
 extension StepDTO {

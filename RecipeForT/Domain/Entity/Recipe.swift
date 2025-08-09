@@ -10,9 +10,11 @@ import Foundation
 /// 레시피
 struct Recipe: Identifiable {
     /// 고유 식별자
-    let id: UInt64
+    let id: String
     /// 레시피 작성자 식별자
-    let authorID: UInt64
+    let authorID: String
+    /// 레시피 작성자 이름
+    let authorNickname: String
     /// 레시피 또는 음식의 이름
     let name: String
     /// 대표 이미지 URL
@@ -33,8 +35,9 @@ struct Recipe: Identifiable {
     let detailedSteps: [CookingStep]
     
     init(
-        id: UInt64 = .zero,
-        authorID: UInt64 = .zero,
+        id: String = UUID().uuidString,
+        authorID: String = "",
+        authorNickname: String = "",
         name: String = "",
         imageURL: URL? = nil,
         servingsCount: Decimal? = nil,
@@ -47,6 +50,7 @@ struct Recipe: Identifiable {
     ) {
         self.id = id
         self.authorID = authorID
+        self.authorNickname = authorNickname
         self.name = name
         self.imageURL = imageURL
         self.servingsCount = servingsCount

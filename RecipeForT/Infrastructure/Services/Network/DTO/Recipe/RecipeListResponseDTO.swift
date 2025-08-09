@@ -40,14 +40,29 @@ struct RecipeListResponseDTO: Decodable {
 extension RecipeListResponseDTO {
     struct RecipeDTO: Decodable {
         let authorID, authorNickname, title: String
-        let imageURLString: String?
+        let imageURL: URL?
         let servings, cost, cookingTime: Decimal?
         
         enum CodingKeys: String, CodingKey {
             case title, servings, cost, cookingTime
             case authorID = "authorId"
             case authorNickname = "authorName"
-            case imageURLString = "imageUrl"
+            case imageURL = "imageUrl"
+        }
+        
+        func toEntity() -> Recipe {
+            .init(
+                authorID: authorID,
+                authorNickname: authorNickname,
+                name: title,
+                imageURL: imageURL,
+                servingsCount: servings,
+                cost: cost,
+                cookingTime: cookingTime,
+                ingredients: [],
+                sources: [],
+                detailedSteps: []
+            )
         }
     }
 }

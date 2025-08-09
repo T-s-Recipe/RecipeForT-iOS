@@ -54,4 +54,10 @@ struct IngredientDTO: Codable {
         
         return measurements
     }
+    
+    func toEntity() -> Ingredient {
+        var units = MeasurementUnitDataSource()
+        measurements.forEach { units[$0.unit.toMeasurementUnit] = $0.ammount }
+        return Ingredient(name: name, units: units)
+    }
 }

@@ -58,7 +58,7 @@ import Foundation
  */
 struct RecipeResponseDTO: Decodable {
     let id, authorID, authorNickname, title: String
-    let imageURLString: String?
+    let imageURL: URL?
     let servings, cost, cookingTime: Decimal
     let description: String
     let basicIngredients, sources: [IngredientDTO]
@@ -67,7 +67,7 @@ struct RecipeResponseDTO: Decodable {
     enum CodingKeys: String, CodingKey {
         case id, authorNickname, title, servings, cost, cookingTime, basicIngredients, steps
         case authorID = "authorId"
-        case imageURLString = "imageUrl"
+        case imageURL = "imageUrl"
         case description = "memo"
         case sources = "sourceIngredients"
     }

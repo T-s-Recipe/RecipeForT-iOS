@@ -43,5 +43,17 @@ extension MeasurementDTO {
         case cup = "CUP"
         case ounce = "OZ"
         case quantity = "QUANTITY"
+        
+        var toMeasurementUnit: MeasurementUnit {
+            switch self {
+            case .quantity: .quantity
+            case .tablespoon: .tablespoon
+            case .teaspoon: .teaspoon
+            case .cup: .cup
+            case .gram: .gram
+            case .milliliter: .milliliters
+            case .ounce: .ounce
+            }
+        }
     }
 }
