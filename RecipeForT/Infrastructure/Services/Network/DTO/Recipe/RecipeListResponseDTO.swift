@@ -35,6 +35,11 @@ struct RecipeListResponseDTO: Decodable {
         case recipes = "resultList"
         case nextCursorID = "nextCursorId"
     }
+    
+    func toEntity() -> RecipePage {
+        let recipes = recipes.map { $0.toEntity() }
+        return .init(recipes: recipes, nextPageID: nextCursorID)
+    }
 }
 
 extension RecipeListResponseDTO {

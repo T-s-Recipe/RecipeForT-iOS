@@ -6,50 +6,53 @@
 //
 
 import SwiftUI
+import Swinject
 
 struct MainView: View {
     @EnvironmentObject private var router: Router
-    
-    @State private var recipes: [Recipe] = [
-        PreviewHelper.shared.mockRecipe
-    ]
+    @State private var recipeLibrary: RecipeLibrary
     
     private let column: [GridItem] = [
         .init(.adaptive(minimum: 120, maximum: .infinity)),
         .init(.adaptive(minimum: 120, maximum: .infinity))
     ]
     
+    init(resolver: Resolver) {
+        recipeLibrary = RecipeLibrary(resolver: resolver)
+    }
+    
     var body: some View {
         ScrollView(.vertical) {
             LazyVGrid(columns: column, spacing: 8) {
-                ForEach(recipes) { recipe in
+                ForEach(recipeLibrary.recipes) { recipe in
                     Cell(recipe: recipe)
+                        .onAppear {
+                            recipeLibrary.loadRecipesIfNeeded(recipe.id)
+                        }
                 }
             }
             .padding(.horizontal)
+            
+            if recipeLibrary.isLoading {
+                ProgressView()
+                    .padding()
+            }
+        }
+        .task {
+            recipeLibrary.loadRecipes()
+        }
+        .refreshable {
+            recipeLibrary.refresh()
+        }
+        .onChange(of: recipeLibrary.floater) { _, newValue in
+            guard let item = newValue else { return }
+            router.presentFloater(role: item.role, message: item.message)
         }
     }
 }
 
 // MARK: - Subviews
 extension MainView {
-    struct Header: View {
-        @State private var searchText = String()
-        
-        private let prompt: Text = Text("레시피 검색")
-        
-        var body: some View {
-            HStack {
-                Image(systemName: "house")
-                
-                Spacer()
-                
-                TextField("레시피 검색", text: $searchText, prompt: prompt)
-            }
-            .padding()
-        }
-    }
-    
     struct Cell: View {
         @EnvironmentObject private var router: Router
         
@@ -92,7 +95,7 @@ extension MainView {
                             .font(.subheadline)
                         }
                         
-                        Text("Author Name")
+                        Text(recipe.authorNickname)
                             .font(.subheadline)
                     }
                     

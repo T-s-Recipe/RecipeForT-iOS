@@ -32,8 +32,6 @@ enum RecipeRepositoryError: Error {
 }
 
 final class RecipeRepository {
-    private var recipes: [String: Recipe] = [:]
-    
     private let networkService: NetworkServiceProtocol
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
@@ -81,7 +79,6 @@ extension RecipeRepository: RecipeRepositoryProtocol {
             let response = try await networkService.request(endpoint)
             let responseDTO = try decoder.decode(CreateRecipeResponseDTO.self, from: response.data)
             let recipe = responseDTO.toEntity()
-            recipes[recipe.id] = recipe
             return recipe
         } catch is EncodingError {
             throw RecipeRepositoryError.encodingFailed
@@ -93,7 +90,18 @@ extension RecipeRepository: RecipeRepositoryProtocol {
     }
     
     func read(pageID: String?, limit: Int32) async throws -> RecipePage {
-        .init(recipes: [], nextPageID: nil)
+        let endpoint = Endpoint.fetchRecipeList(nextPageID: pageID, limit: limit)
+        
+        do {
+            let response = try await networkService.request(endpoint)
+            let responseDTO = try decoder.decode(RecipeListResponseDTO.self, from: response.data)
+            let page = responseDTO.toEntity()
+            return page
+        } catch is DecodingError {
+            throw RecipeRepositoryError.decodingFailed
+        } catch let error as NetworkServiceError {
+            throw RecipeRepositoryError.networkError(error)
+        }
     }
     
     func update(_ recipe: Recipe) async throws {
