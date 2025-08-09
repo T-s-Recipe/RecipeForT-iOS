@@ -18,6 +18,6 @@ final class RecipePagenationUseCase {
 // MARK: - Interfaces
 extension RecipePagenationUseCase {
     func fetchRecipes(pageID: String?, limit: Int32 = 16) async throws -> [Recipe] {
-        
+        []
     }
 }

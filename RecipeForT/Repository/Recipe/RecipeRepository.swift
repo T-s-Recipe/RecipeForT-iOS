@@ -7,6 +7,24 @@
 
 import Foundation
 
+protocol RecipeRepositoryProtocol {
+    func create(
+        userID: String,
+        title: String,
+        image: Data?,
+        servings: Decimal?,
+        cost: Decimal?,
+        cookingTime: Decimal?,
+        notes: String,
+        basicIngredients: [Ingredient],
+        sources: [Ingredient],
+        detailedSteps: [CookingStep]
+    ) async throws -> Recipe
+    func read(pageID: String?, limit: Int32) async throws -> [Recipe]
+    func update(_ recipe: Recipe) async throws
+    func delete(_ id: UInt64) async throws
+}
+
 enum RecipeRepositoryError: Error {
     case encodingFailed
     case decodingFailed
@@ -22,8 +40,8 @@ final class RecipeRepository {
     
     init(
         networkService: NetworkServiceProtocol,
-        decoder: JSONDecoder,
-        encoder: JSONEncoder
+        decoder: JSONDecoder = JSONDecoder(),
+        encoder: JSONEncoder = JSONEncoder()
     ) {
         self.networkService = networkService
         self.decoder = decoder
@@ -72,14 +90,14 @@ extension RecipeRepository: RecipeRepositoryProtocol {
     }
     
     func read(pageID: String?, limit: Int32) async throws -> [Recipe] {
-        <#code#>
+        []
     }
     
     func update(_ recipe: Recipe) async throws {
-        <#code#>
+        
     }
     
     func delete(_ id: UInt64) async throws {
-        <#code#>
+        
     }
 }

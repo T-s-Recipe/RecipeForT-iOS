@@ -8,6 +8,14 @@
 import Foundation
 import Security
 
+protocol TokenStorageProtocol {
+    typealias Query = [String: Any]
+    
+    func store(_ data: Data) throws
+    func fetch() throws -> Data
+    func delete() throws
+}
+
 private enum TokenStorageError: Error {
     case unknown
     case failedFindToken

@@ -8,6 +8,19 @@
 import Foundation
 import Moya
 
+protocol MemberRepositoryProtocol {
+    var authenticationState: AuthenticationState { get }
+    var isLoggedIn: Bool { get }
+    
+    func signIn(authCode: Data, provider: OAuthProvider, name: String?, email: String?) async throws -> AuthenticationState
+    func signUp(authCode: Data, provider: OAuthProvider, name: String?, email: String?, nickname: String) async throws -> AuthenticationState
+    func fetchMember() async throws -> AuthenticationState
+    func fetchMember(id: String) async throws -> AuthenticationState
+    func fetchMember(authCode: Data, provider: OAuthProvider) async throws -> AuthenticationState
+    func logout() async throws -> AuthenticationState
+    func fetchRandomNickname() async throws -> String
+}
+
 enum MemberRepositoryError: Error {
     case memberNotFound
     case authenticationFailed
@@ -17,6 +30,10 @@ enum MemberRepositoryError: Error {
 
 final class MemberRepository {
     private(set) var authenticationState: AuthenticationState = .loggedOut
+    var isLoggedIn: Bool {
+        guard case .loggedIn = authenticationState else { return false }
+        return true
+    }
     
     private let networkService: NetworkServiceProtocol
     private let tokenStorage: TokenStorageProtocol

@@ -17,8 +17,15 @@ final class TabSelector {
         case myPage
     }
     
+    var isLoggedIn: Bool { memberRepository.isLoggedIn }
     var currentTab: TabSelection = .main
     @ObservationIgnored var previousTab: TabSelection = .main
+    
+    private let memberRepository: MemberRepositoryProtocol
+    
+    init(resolver: Resolver) {
+        self.memberRepository = resolver.resolve(MemberRepositoryProtocol.self)!
+    }
     
     func backToPreviousTab() {
         currentTab = previousTab
@@ -27,10 +34,11 @@ final class TabSelector {
 
 struct ContentView: View {
     @StateObject private var router: Router
-    @State private var tabSelector = TabSelector()
+    @State private var tabSelector: TabSelector
     
     init(resolver: Resolver) {
         self._router = StateObject(wrappedValue: Router(resolver: resolver))
+        self.tabSelector = TabSelector(resolver: resolver)
     }
     
     var body: some View {

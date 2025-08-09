@@ -36,7 +36,7 @@ extension RecipeUploadUseCase {
         let authenticationState = try await memberRepository.fetchMember()
         guard case .loggedIn(let member) = authenticationState else { throw MemberRepositoryError.authenticationFailed }
         
-        return try await recipeRepository.create(
+        _ = try await recipeRepository.create(
             userID: member.id,
             title: title,
             image: image,

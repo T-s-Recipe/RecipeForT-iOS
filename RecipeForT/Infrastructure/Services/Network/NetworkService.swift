@@ -8,6 +8,10 @@
 import Foundation
 import Moya
 
+protocol NetworkServiceProtocol {
+    func request<T>(_ endpoint: T) async throws -> Response where T: TargetType
+}
+
 enum NetworkServiceError: Error {
     case invalidResponse                  // 잘못된 HTTP 상태 코드
     case encodingFailed                   // 요청 인코딩 실패
