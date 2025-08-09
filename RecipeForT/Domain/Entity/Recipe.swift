@@ -8,7 +8,8 @@
 import Foundation
 
 /// 레시피
-struct Recipe: Identifiable {
+@Observable
+final class Recipe: Identifiable {
     /// 고유 식별자
     let id: String
     /// 레시피 작성자 식별자
@@ -157,4 +158,9 @@ struct CookingDetailedProcess: Identifiable {
         self.image = image
         self.description = description
     }
+}
+
+struct RecipePage {
+    let recipes: [Recipe]
+    let nextPageID: String?
 }

@@ -20,7 +20,7 @@ protocol RecipeRepositoryProtocol {
         sources: [Ingredient],
         detailedSteps: [CookingStep]
     ) async throws -> Recipe
-    func read(pageID: String?, limit: Int32) async throws -> [Recipe]
+    func read(pageID: String?, limit: Int32) async throws -> RecipePage
     func update(_ recipe: Recipe) async throws
     func delete(_ id: UInt64) async throws
 }
@@ -92,8 +92,8 @@ extension RecipeRepository: RecipeRepositoryProtocol {
         }
     }
     
-    func read(pageID: String?, limit: Int32) async throws -> [Recipe] {
-        []
+    func read(pageID: String?, limit: Int32) async throws -> RecipePage {
+        .init(recipes: [], nextPageID: nil)
     }
     
     func update(_ recipe: Recipe) async throws {
