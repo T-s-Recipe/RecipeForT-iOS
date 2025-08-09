@@ -105,7 +105,7 @@ extension RecipeGuideView {
                 }
                 
                 // TODO: 레시피 작성자 정보 비동기로 가져오기
-                Text("홍길동")
+                Text(recipe.authorNickname)
                     .foregroundStyle(.gray)
                 
                 Text(recipe.description)
