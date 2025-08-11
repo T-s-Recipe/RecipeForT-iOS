@@ -23,13 +23,12 @@ struct SignUpFeature {
 }
 
 // MARK: - ViewFeature Conformation
-extension SignUpFeature: @preconcurrency ViewFeature {
+extension SignUpFeature: ViewFeature {
     enum UIEvent {
         case task
         case continueTapped
     }
     
-    @MainActor
     func notify(_ event: UIEvent) {
         switch event {
         case .task:
@@ -63,6 +62,10 @@ extension SignUpFeature: View {
             notify(.task)
         }
         .onChange(of: state.entity) {
+            if case .loaded(let authState) = state.entity, authState.isRegistrationNeeded == false {
+                router.dismiss()
+            }
+            
             guard case .error(let item) = state.entity else { return }
             router.presentFloater(role: item.role, message: item.message)
         }

@@ -6,55 +6,31 @@
 //
 
 import SwiftUI
-import AuthenticationServices
-import GoogleSignIn
-import Swinject
 
 struct AuthFeature {
-    enum Entity: Equatable {
-        case loading
-        case loaded(AuthenticationState)
-        case error(FloaterItem)
+    enum Constants: String, CustomStringConvertible {
+        case title = "Log in"
+        case subtitle = "Welcome back !"
         
-        static func == (lhs: Self, rhs: Self) -> Bool {
-            switch (lhs, rhs) {
-            case (.loading, .loading):
-                return true
-            case (.loaded(let lhsValue), .loaded(let rhsValue)):
-                return lhsValue == rhsValue
-            case (.error(let lhsValue), .error(let rhsValue)):
-                return lhsValue == rhsValue
-            default:
-                return false
-            }
-        }
+        var description: String { self.rawValue }
     }
     
     @Environment(\.router) private var router
     @Environment(\.memberRepository) private var memberRepository
-    @State private var entity: Entity = .loaded(.loggedOut)
+    
+    private var isPendingRegistration: Bool {
+        memberRepository.authenticationState.isRegistrationNeeded
+    }
 }
 
 // MARK: - ViewFeature Conformation
 extension AuthFeature: ViewFeature {
     enum UIEvent {
-        case task
-        case signInWithGoogle(result: Result<GIDSignInResult, Error>)
-        case signInWithApple(result: Result<ASAuthorizationResult, Error>)
-        case floater(item: FloaterItem)
+        
     }
     
     func notify(_ event: UIEvent) {
-        switch event {
-        case .task:
-            <#code#>
-        case .signInWithGoogle(let result):
-            <#code#>
-        case .signInWithApple(let result):
-            <#code#>
-        case .floater(let item):
-            router.presentFloater(role: item.role, message: item.message)
-        }
+        
     }
 }
 
@@ -62,11 +38,24 @@ extension AuthFeature: ViewFeature {
 extension AuthFeature: View {
     var body: some View {
         VStack {
-            Header()
+            VStack(spacing: 8) {
+                Text(Constants.title.description)
+                    .font(.title.weight(.medium))
+                
+                Text(Constants.subtitle.description)
+            }
+            .safeAreaPadding(.top, 98)
             
             Spacer()
             
-            LoginButtonFeature()
+            VStack(spacing: 12) {
+                if isPendingRegistration {
+                    SignUpFeature()
+                } else {
+                    SignInFeature()
+                }
+            }
+            .padding(.horizontal)
             
             Spacer()
             Spacer()
@@ -77,72 +66,6 @@ extension AuthFeature: View {
                 BackButton(.xmark)
             }
         }
-        .onChange(of: entity) {
-            guard case .error(let item) = entity else { return }
-            notify(.floater(item: item))
-        }
-    }
-}
-
-// MARK: - Subviews
-extension AuthFeature {
-    struct Header: View {
-        var body: some View {
-            VStack(spacing: 8) {
-                Text("Log in")
-                    .font(.title.weight(.medium))
-                
-                Text("Welcome back !")
-            }
-            .safeAreaPadding(.top, 98)
-        }
-    }
-}
-
-struct LoginButtonFeature {
-    @Environment(\.router) private var router
-    @Environment(\.memberRepository) private var memberRepository
-    
-    @FocusState private var isFocused: Bool
-    
-    var isPendingRegistration: Bool {
-        memberRepository.authenticationState.isRegistrationNeeded
-    }
-}
-
-// MARK: - ViewFeature Conformation
-extension LoginButtonFeature: ViewFeature {
-    enum UIEvent {
-        
-    }
-    
-    func notify(_ event: UIEvent) {
-        
-    }
-}
-
-// MARK: - View Conformation
-extension LoginButtonFeature: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            if isPendingRegistration {
-                
-            } else {
-                SignInWithGoogleButton(.continue) { result in
-                    state.signInWithGoogle(result)
-                }
-                
-                SignInWithAppleButton(.continue) { request in
-                    request.nonce = UUID().uuidString
-                    request.requestedScopes = [.email, .fullName]
-                } onCompletion: { result in
-                    state.signInWithApple(result)
-                }
-                .signInWithAppleButtonStyle(.whiteOutline)
-                .frame(height: 44)
-            }
-        }
-        .padding(.horizontal)
     }
 }
 
