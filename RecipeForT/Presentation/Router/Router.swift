@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Swinject
 
 protocol RouterProtocol {
     associatedtype Destination: Routable where Destination == Route
@@ -29,7 +28,7 @@ protocol Routable: Identifiable, Hashable {
     
     var presentingType: PresentingType { get }
     
-    @ViewBuilder func view(with router: Router, resolver: Resolver) -> Content
+    @ViewBuilder func view(with router: Router) -> Content
 }
 
 extension Routable {
@@ -61,14 +60,14 @@ enum Route: Routable {
         }
     }
     
-    @ViewBuilder func view(with router: Router, resolver: Resolver) -> some View {
+    @ViewBuilder func view(with router: Router) -> some View {
         switch self {
-        case .mainView: MainView(resolver: resolver)
+        case .mainView: MainView()
         case .searchView: SearchingView()
-        case .editRecipeView(let recipe): EditRecipeView(recipe: recipe, resolver: resolver)
+        case .editRecipeView(let recipe): EditRecipeView(recipe: recipe)
         case .myPageView: PersonalView()
-        case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe, resolver: resolver)
-        case .loginView: LoginView(resolver: resolver)
+        case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe)
+        case .loginView: LoginView()
         }
     }
 }
@@ -85,22 +84,17 @@ extension Route: Hashable {
     }
 }
 
-final class Router: ObservableObject, RouterProtocol {
+@Observable
+final class Router: RouterProtocol {
     typealias Destination = Route
     
-    @Published var path = NavigationPath()
-    @Published var sheet: Destination?
-    @Published var fullScreenCover: Destination?
-    @Published var floater: FloaterItem?
+    var path = NavigationPath()
+    var sheet: Destination?
+    var fullScreenCover: Destination?
+    var floater: FloaterItem?
     
     private var isModalPresented: Bool {
         sheet != nil || fullScreenCover != nil
-    }
-    
-    private let resolver: Resolver
-    
-    init(resolver: Resolver) {
-        self.resolver = resolver
     }
     
     private func _push(_ destination: Destination) {
@@ -121,8 +115,8 @@ final class Router: ObservableObject, RouterProtocol {
 // MARK: - Interfaces
 extension Router {
     @ViewBuilder func view(to destination: Destination) -> some View {
-        destination.view(with: self, resolver: resolver)
-            .environmentObject(self)
+        destination.view(with: self)
+            .environment(self)
     }
     
     func route(to destination: Destination) {

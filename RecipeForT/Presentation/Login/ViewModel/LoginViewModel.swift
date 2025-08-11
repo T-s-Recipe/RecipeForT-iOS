@@ -13,7 +13,7 @@ import GoogleSignIn
 @Observable @MainActor
 final class LoginViewModel {
     private var authenticationState: AuthenticationState
-    private var currentAttemptRecord: SignInAttemptRecord?
+    
     var isPendingRegistration: Bool { authenticationState.isRegistrationNeeded }
     var floaterItem: FloaterItem?
     var temporalNickname: String = String()

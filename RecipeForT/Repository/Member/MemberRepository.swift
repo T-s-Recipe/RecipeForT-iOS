@@ -13,7 +13,7 @@ protocol MemberRepositoryProtocol {
     var isLoggedIn: Bool { get }
     
     func signIn(authCode: Data, provider: OAuthProvider, name: String?, email: String?) async throws -> AuthenticationState
-    func signUp(authCode: Data, provider: OAuthProvider, name: String?, email: String?, nickname: String) async throws -> AuthenticationState
+    func signUp(nickname: String) async throws -> AuthenticationState
     func fetchMember() async throws -> AuthenticationState
     func fetchMember(id: String) async throws -> AuthenticationState
     func fetchMember(authCode: Data, provider: OAuthProvider) async throws -> AuthenticationState
@@ -30,6 +30,7 @@ enum MemberRepositoryError: Error {
 
 final class MemberRepository {
     private(set) var authenticationState: AuthenticationState = .loggedOut
+    private var currentAttemptRecord: SignInAttemptRecord?
     var isLoggedIn: Bool {
         guard case .loggedIn = authenticationState else { return false }
         return true
@@ -77,12 +78,14 @@ extension MemberRepository: MemberRepositoryProtocol {
         }
     }
     
-    func signUp(authCode: Data, provider: OAuthProvider, name: String?, email: String?, nickname: String) async throws -> AuthenticationState {
+    func signUp(nickname: String) async throws -> AuthenticationState {
+        guard let record = currentAttemptRecord else { throw MemberRepositoryError.memberNotFound }
+        
         let requestDTO = SignUpRequestDTO(
-            providerIdentifier: provider.identifier,
-            authID: authCode.base64EncodedString(),
-            name: name,
-            email: email,
+            providerIdentifier: record.provider.identifier,
+            authID: record.authCode.base64EncodedString(),
+            name: record.name,
+            email: record.email,
             nickname: nickname
         )
         let endpoint = Endpoint.register(requestDTO)
