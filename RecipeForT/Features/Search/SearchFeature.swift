@@ -1,35 +1,82 @@
 //
-//  SearchingView.swift
+//  SearchFeature.swift
 //  RecipeForT
 //
-//  Created by Swain Yun on 6/30/25.
+//  Created by Swain Yun on 8/12/25.
 //
 
 import SwiftUI
 
-struct SearchingView: View {
-    @State private var searchText: String = String()
+@MainActor
+struct SearchFeature {
+    @State private var state = SearchState()
+}
+
+// MARK: - ViewFeature Conformation
+extension SearchFeature: ViewFeature {
+    enum UIEvent {
+        case submit(String)
+    }
     
+    func notify(_ event: UIEvent) {
+        
+    }
+}
+
+// MARK: - View Conformation
+extension SearchFeature: View {
     var body: some View {
         VStack {
-            SearchBar(text: $searchText) {
+            SearchBar(text: $state.searchingText) {
                 print("OnSubmitted")
             }
             
-            // TODO: 검색 결과가 없을 경우
-            if true {
-                UnavailableView()
-            } else {
+            switch state.entity {
+            case .initial:
+                EmptyView()
+                
+            case .notFound:
+                unavailableView
+                
+            case .found(let recipes):
                 ScrollView(.vertical) {
                     Text("WIP")
                 }
             }
         }
     }
+    
+    private var unavailableView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            
+            Image(systemName: "exclamationmark.magnifyingglass")
+                .resizable()
+                .frame(width: 52, height: 52)
+                .foregroundStyle(.gray)
+            
+            Text("No Result Found")
+                .fontWeight(.bold)
+            
+            Text("Can't find what you're looking for?\nJust let us know and we'll add it for you!")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.gray)
+            
+            Button {
+                // TODO: 무슨 비즈니스를 수행하는지 확인 필요
+            } label: {
+                Text("Request this recipe!")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.black)
+            
+            Spacer()
+        }
+    }
 }
 
 // MARK: - Subviews
-extension SearchingView {
+extension SearchFeature {
     struct SearchBar: View {
         @Binding var text: String
         @FocusState private var isFocused: Bool
@@ -84,38 +131,8 @@ extension SearchingView {
             isFocused = false
         }
     }
-    
-    struct UnavailableView: View {
-        var body: some View {
-            VStack(spacing: 20) {
-                Spacer()
-                
-                Image(systemName: "exclamationmark.magnifyingglass")
-                    .resizable()
-                    .frame(width: 52, height: 52)
-                    .foregroundStyle(.gray)
-                
-                Text("No Result Found")
-                    .fontWeight(.bold)
-                
-                Text("Can't find what you're looking for?\nJust let us know and we'll add it for you!")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.gray)
-                
-                Button {
-                    // TODO: 무슨 비즈니스를 수행하는지 확인 필요
-                } label: {
-                    Text("Request this recipe!")
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.black)
-                
-                Spacer()
-            }
-        }
-    }
 }
 
 #Preview {
-    SearchingView()
+    SearchFeature()
 }
