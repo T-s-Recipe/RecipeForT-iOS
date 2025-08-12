@@ -1,14 +1,14 @@
 //
-//  RecipeViewer.swift
+//  RecipeGuideState.swift
 //  RecipeForT
 //
-//  Created by Swain Yun on 7/29/25.
+//  Created by Swain Yun on 8/12/25.
 //
 
 import Foundation
 
 @MainActor @Observable
-final class RecipeViewer {
+final class RecipeGuideState {
     private(set) var servings: Decimal?
     private(set) var ingredients: [Ingredient]
     private(set) var sources: [Ingredient]
@@ -20,7 +20,7 @@ final class RecipeViewer {
     private let originalIngredients: [Ingredient]
     private let originalSources: [Ingredient]
     
-    init(_ recipe: Recipe) {
+    init(recipe: Recipe) {
         self.servings = recipe.servingsCount
         self.ingredients = recipe.ingredients
         self.sources = recipe.sources
@@ -53,7 +53,7 @@ final class RecipeViewer {
 }
 
 // MARK: - Interfaces
-extension RecipeViewer {
+extension RecipeGuideState {
     func increaseServing() {
         guard let currentServings = servings, currentServings < maxServing else { return }
         servings = (currentServings + 0.5).rounded(to: 1)

@@ -23,10 +23,13 @@ struct RecipeForTApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView(resolver: resolver)
+            RootFeature()
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }
+                .environment(\.router, Router())
+                .environment(\.recipeRepository, resolver.resolve(RecipeRepositoryProtocol.self)!)
+                .environment(\.memberRepository, resolver.resolve(MemberRepositoryProtocol.self)!)
         }
     }
 }

@@ -15,6 +15,7 @@ struct SearchFeature {
 // MARK: - ViewFeature Conformation
 extension SearchFeature: ViewFeature {
     enum UIEvent {
+        case task
         case submit(String)
     }
     
@@ -28,7 +29,7 @@ extension SearchFeature: View {
     var body: some View {
         VStack {
             SearchBar(text: $state.searchingText) {
-                print("OnSubmitted")
+                notify(.submit(state.searchingText))
             }
             
             switch state.entity {
@@ -43,6 +44,9 @@ extension SearchFeature: View {
                     Text("WIP")
                 }
             }
+        }
+        .task {
+            notify(.task)
         }
     }
     

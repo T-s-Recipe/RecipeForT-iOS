@@ -9,7 +9,7 @@ import Foundation
 
 /// 레시피
 @Observable
-final class Recipe: Identifiable {
+final class Recipe: Identifiable, Equatable {
     /// 고유 식별자
     let id: String
     /// 레시피 작성자 식별자
@@ -64,6 +64,10 @@ final class Recipe: Identifiable {
     }
     
     static var sample: Recipe { .init() }
+    
+    static func == (lhs: Recipe, rhs: Recipe) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 /// 음식 재료

@@ -62,12 +62,12 @@ enum Route: Routable {
     
     @ViewBuilder func view(with router: Router) -> some View {
         switch self {
-        case .mainView: MainView()
-        case .searchView: SearchingView()
+        case .mainView: RecipeListFeature()
+        case .searchView: SearchFeature()
         case .editRecipeView(let recipe): EditRecipeView(recipe: recipe)
-        case .myPageView: PersonalView()
+        case .myPageView: PreferenceFeature()
         case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe)
-        case .loginView: LoginView()
+        case .loginView: AuthFeature()
         }
     }
 }
