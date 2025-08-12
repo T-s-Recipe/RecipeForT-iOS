@@ -11,7 +11,7 @@ import Swinject
 final class PreviewHelper {
     static let shared = PreviewHelper()
     
-    lazy var router = Router(resolver: resolver)
+    lazy var router = Router()
     
     lazy var resolver: Resolver = {
         let assembler = Assembler([

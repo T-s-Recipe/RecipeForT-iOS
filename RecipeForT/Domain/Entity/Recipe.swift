@@ -71,12 +71,16 @@ final class Recipe: Identifiable, Equatable {
 }
 
 /// 음식 재료
-struct Ingredient: Identifiable {
+struct Ingredient: Identifiable, Equatable {
     let id: UUID = UUID()
     /// 재료 이름
     var name: String
     /// 계량 단위
     var units: MeasurementUnitDataSource
+    
+    static func == (lhs: Ingredient, rhs: Ingredient) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 struct MeasurementUnitDataSource {
@@ -139,7 +143,7 @@ enum MeasurementUnit: CaseIterable {
 }
 
 /// 조리과정
-struct CookingStep: Identifiable {
+struct CookingStep: Identifiable, Equatable {
     let id: UUID = UUID()
     var title: String
     var detailedProcesses: [CookingDetailedProcess]
@@ -147,6 +151,10 @@ struct CookingStep: Identifiable {
     init(title: String, detailedProcesses: [CookingDetailedProcess] = [.init(description: "")]) {
         self.title = title
         self.detailedProcesses = detailedProcesses
+    }
+    
+    static func == (lhs: CookingStep, rhs: CookingStep) -> Bool {
+        lhs.id == rhs.id
     }
 }
 

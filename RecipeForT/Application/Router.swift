@@ -16,7 +16,7 @@ protocol RouterProtocol {
     var fullScreenCover: Destination? { get set }
     var floater: FloaterItem? { get set }
     
-    @ViewBuilder func view(to destination: Destination) -> Content
+    @ViewBuilder func view(to destination: Destination) async -> Content
     func route(to destination: Destination)
     func dismiss()
     func popToRoot()
@@ -28,7 +28,7 @@ protocol Routable: Identifiable, Hashable {
     
     var presentingType: PresentingType { get }
     
-    @ViewBuilder func view(with router: Router) -> Content
+    @ViewBuilder func view(with router: Router) async -> Content
 }
 
 extension Routable {
@@ -60,13 +60,14 @@ enum Route: Routable {
         }
     }
     
+    @MainActor
     @ViewBuilder func view(with router: Router) -> some View {
         switch self {
         case .mainView: RecipeListFeature()
         case .searchView: SearchFeature()
-        case .editRecipeView(let recipe): EditRecipeView(recipe: recipe)
+        case .editRecipeView(let recipe): EditRecipeFeature(recipe: recipe)
         case .myPageView: PreferenceFeature()
-        case .recipeGuideView(let recipe): RecipeGuideView(recipe: recipe)
+        case .recipeGuideView(let recipe): RecipeGuideFeature(recipe: recipe)
         case .loginView: AuthFeature()
         }
     }
@@ -101,12 +102,12 @@ final class Router: RouterProtocol {
         path.append(destination)
     }
     
-    private func _sheet(_ destination: Destination) {
+    private func __sheet(_ destination: Destination) {
         guard isModalPresented == false else { return }
         sheet = destination
     }
     
-    private func _fullScreenCover(_ destination: Destination) {
+    private func __fullScreenCover(_ destination: Destination) {
         guard isModalPresented == false else { return }
         fullScreenCover = destination
     }
@@ -114,7 +115,7 @@ final class Router: RouterProtocol {
 
 // MARK: - Interfaces
 extension Router {
-    @ViewBuilder func view(to destination: Destination) -> some View {
+    @MainActor @ViewBuilder func view(to destination: Destination) -> some View {
         destination.view(with: self)
             .environment(self)
     }
@@ -122,8 +123,8 @@ extension Router {
     func route(to destination: Destination) {
         switch destination.presentingType {
         case .push: _push(destination)
-        case .sheet: _sheet(destination)
-        case .fullScreenCover: _fullScreenCover(destination)
+        case .sheet: __sheet(destination)
+        case .fullScreenCover: __fullScreenCover(destination)
         }
     }
     
