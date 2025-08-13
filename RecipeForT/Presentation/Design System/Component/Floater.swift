@@ -61,6 +61,7 @@ struct FloaterModifier: ViewModifier {
             if isPresented {
                 HStack(spacing: 10) {
                     Text(message)
+                        .frame(maxWidth: .infinity)
                         .lineLimit(3)
                         .multilineTextAlignment(.leading)
                     
@@ -82,6 +83,7 @@ struct FloaterModifier: ViewModifier {
                         isPresented = false
                     }
                 }
+                .safeAreaPadding(.bottom)
             }
         }
         .animation(.smooth, value: isPresented)
