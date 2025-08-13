@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 struct RootFeature {
     typealias TabSelection = RootState.TabSelection
     
@@ -17,15 +18,13 @@ struct RootFeature {
 // MARK: - ViewFeature Conformation
 extension RootFeature: ViewFeature {
     enum UIEvent {
-        case tabChanged(old: TabSelection, new: TabSelection)
+        case tabChanged(to: TabSelection)
     }
     
     func notify(_ event: UIEvent) {
         switch event {
-        case .tabChanged(_, let new):
-            state.updateTab(to: new)
-            
-            guard case .recipeUpload = new else { return }
+        case .tabChanged(let to):
+            guard case .recipeUpload = to else { return state.updateTab(to: to) }
             router.route(to: .editRecipeView(recipe: nil))
         }
     }
@@ -37,7 +36,10 @@ extension RootFeature: View {
         @Bindable var router = router
         
         NavigationStack(path: $router.path) {
-            TabView(selection: $state.currentTab) {
+            TabView(selection: Binding(
+                get: { state.currentTab },
+                set: { notify(.tabChanged(to: $0)) }
+            )) {
                 Tab(value: TabSelection.main) {
                     router.view(to: .mainView)
                 } label: {
@@ -71,14 +73,8 @@ extension RootFeature: View {
             .sheet(item: $router.sheet) { destination in
                 router.view(to: destination)
             }
-            .fullScreenCover(item: $router.fullScreenCover) {
-                guard case .recipeUpload = state.currentTab else { return }
-                notify(.tabChanged(old: state.currentTab, new: state.previousTab))
-            } content: { destination in
+            .fullScreenCover(item: $router.fullScreenCover) { destination in
                 router.view(to: destination)
-            }
-            .onChange(of: state.currentTab) { previous, current in
-                notify(.tabChanged(old: previous, new: current))
             }
         }
         .floater($router.floater)

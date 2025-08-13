@@ -7,17 +7,23 @@
 
 import Foundation
 
-@Observable
+@Observable @MainActor
 final class RootState {
     enum TabSelection: Hashable {
         case main, search, recipeUpload, preferences
     }
     
-    var currentTab: TabSelection = .main
+    var currentTab: TabSelection = .main {
+        didSet { print(currentTab)}
+    }
     @ObservationIgnored var previousTab: TabSelection = .main
     
     func updateTab(to newTab: TabSelection) {
         previousTab = currentTab
         currentTab = newTab
+    }
+    
+    func backToPreviousTab() {
+        currentTab = previousTab
     }
 }
