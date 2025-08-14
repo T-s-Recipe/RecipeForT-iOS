@@ -24,7 +24,7 @@ final class RecipeUploadUseCase {
 extension RecipeUploadUseCase {
     func execute(
         _ title: String,
-        _ image: Data?,
+        _ image: ImageItem?,
         servings: Decimal?,
         cost: Decimal?,
         cookingTime: Decimal?,

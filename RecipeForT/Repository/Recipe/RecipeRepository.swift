@@ -11,7 +11,7 @@ protocol RecipeRepositoryProtocol {
     func create(
         userID: String,
         title: String,
-        image: Data?,
+        image: ImageItem?,
         servings: Decimal?,
         cost: Decimal?,
         cookingTime: Decimal?,
@@ -52,7 +52,7 @@ extension RecipeRepository: RecipeRepositoryProtocol {
     func create(
         userID: String,
         title: String,
-        image: Data?,
+        image: ImageItem?,
         servings: Decimal?,
         cost: Decimal?,
         cookingTime: Decimal?,

@@ -20,7 +20,7 @@ enum Endpoint {
     case fetchRandomNickname                                                                                    // 랜덤 닉네임 조회
     
     // MARK: - Recipe
-    case uploadRecipe(dtoData: Data, image: Data?)                                                              // 레시피 등록
+    case uploadRecipe(dtoData: Data, image: ImageItem?)                                                         // 레시피 등록
     case fetchRecipeDetail(recipeID: String)                                                                    // 레시피 단건 조회
     case fetchRecipeList(nextPageID: String?, limit: Int32)                                                     // 페이지네이션 레시피 목록 조회
 }
@@ -95,10 +95,10 @@ extension Endpoint: TargetType {
         case .fetchRandomNickname:
             return .requestPlain
             
-        case .uploadRecipe(let dtoData, let image):
+        case .uploadRecipe(let dtoData, let item):
             var formData = [MultipartFormData]()
             formData.append(.init(provider: .data(dtoData), name: "request"))
-            if let image { formData.append(.init(provider: .data(image), name: "imageFile")) }
+            if let item { formData.append(.init(provider: .data(item.data), name: item.filename, mimeType: item.mimeType)) }
             return .uploadMultipart(formData)
         case .fetchRecipeDetail:
             return .requestPlain

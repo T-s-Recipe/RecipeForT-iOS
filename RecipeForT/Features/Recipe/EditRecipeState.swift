@@ -10,7 +10,7 @@ import Foundation
 @Observable @MainActor
 final class EditRecipeState {
     var title = String()
-    var image: Data?
+    var image: ImageItem?
     var servings = String()
     var cost = String()
     var time = String()

@@ -211,17 +211,7 @@ struct DetailedProcessCell: View {
             }
             
             VStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(.clear)
-                    .strokeBorder(.gray)
-                    .frame(width: 80, height: 60)
-                    .overlay {
-                        Image(systemName: "camera.fill")
-                            .resizable()
-                            .frame(width: 28, height: 28)
-                            .padding(16)
-                            .foregroundStyle(.gray)
-                    }
+//                ImagePickerFeature(selectedImageItem: <#T##Binding<ImageItem?>#>)
                 
                 TextField("Description here", text: $process.description, axis: .vertical)
                     .padding(.vertical, 8)
@@ -237,4 +227,8 @@ struct DetailedProcessCell: View {
         }
         .padding()
     }
+}
+
+#Preview {
+    EditRecipeFeature(recipe: nil)
 }
