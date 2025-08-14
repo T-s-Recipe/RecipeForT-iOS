@@ -67,13 +67,13 @@ private extension SignInFeature {
             let task = Task {
                 state.entity = .loading
                 
-                guard let idToken = auth.user.idToken?.tokenString else { return state.entity = .initial }
-                let authCode = Data(idToken.utf8)
+                guard let idTokenString = auth.user.idToken?.tokenString else { return state.entity = .initial }
+                let idToken = Data(idTokenString.utf8)
                 let name = auth.user.profile?.name
                 let email = auth.user.profile?.email
                 
                 do {
-                    let authState = try await memberRepository.signIn(authCode: authCode, provider: .google, name: name, email: email)
+                    let authState = try await memberRepository.signIn(idToken: idToken, provider: .google, name: name, email: email)
                     state.entity = .loaded(authState)
                     
                     if case .loggedIn = authState { router.dismiss() }
@@ -100,14 +100,14 @@ private extension SignInFeature {
                 state.entity = .loading
                 
                 guard let credential = auth.credential as? ASAuthorizationAppleIDCredential,
-                      let authCode = credential.authorizationCode
+                      let idToken = credential.identityToken
                 else { return state.entity = .initial }
                 
                 let name = credential.fullName?.givenName
                 let email = credential.email
                 
                 do {
-                    let authState = try await memberRepository.signIn(authCode: authCode, provider: .apple, name: name, email: email)
+                    let authState = try await memberRepository.signIn(idToken: idToken, provider: .apple, name: name, email: email)
                     state.entity = .loaded(authState)
                     
                     if case .loggedIn = authState { router.dismiss() }

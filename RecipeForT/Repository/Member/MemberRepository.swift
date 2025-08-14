@@ -12,7 +12,7 @@ protocol MemberRepositoryProtocol {
     var authenticationState: AuthenticationState { get }
     var isLoggedIn: Bool { get }
     
-    func signIn(authCode: Data, provider: OAuthProvider, name: String?, email: String?) async throws -> AuthenticationState
+    func signIn(idToken: Data, provider: OAuthProvider, name: String?, email: String?) async throws -> AuthenticationState
     func signUp(nickname: String) async throws -> AuthenticationState
     func fetchMember() async throws -> AuthenticationState
     func fetchMember(id: String) async throws -> AuthenticationState
@@ -56,9 +56,9 @@ final class MemberRepository {
 
 // MARK: - UserRepositoryProtocol Conformation
 extension MemberRepository: MemberRepositoryProtocol {
-    func signIn(authCode: Data, provider: OAuthProvider, name: String?, email: String?) async throws -> AuthenticationState {
+    func signIn(idToken: Data, provider: OAuthProvider, name: String?, email: String?) async throws -> AuthenticationState {
         let requestDTO = SignInRequestDTO(
-            idToken: authCode.base64EncodedString(),
+            idToken: idToken.base64EncodedString(),
             providerIdentifier: provider.identifier,
             name: name,
             email: email
