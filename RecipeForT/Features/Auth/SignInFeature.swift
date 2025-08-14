@@ -75,6 +75,8 @@ private extension SignInFeature {
                 do {
                     let authState = try await memberRepository.signIn(authCode: authCode, provider: .google, name: name, email: email)
                     state.entity = .loaded(authState)
+                    
+                    if case .loggedIn = authState { router.dismiss() }
                 } catch {
                     let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
                     state.entity = .error(item)
@@ -107,6 +109,8 @@ private extension SignInFeature {
                 do {
                     let authState = try await memberRepository.signIn(authCode: authCode, provider: .apple, name: name, email: email)
                     state.entity = .loaded(authState)
+                    
+                    if case .loggedIn = authState { router.dismiss() }
                 } catch {
                     let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
                     state.entity = .error(item)
