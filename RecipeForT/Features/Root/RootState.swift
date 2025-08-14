@@ -13,9 +13,7 @@ final class RootState {
         case main, search, recipeUpload, preferences
     }
     
-    var currentTab: TabSelection = .main {
-        didSet { print(currentTab)}
-    }
+    var currentTab: TabSelection = .main
     @ObservationIgnored var previousTab: TabSelection = .main
     
     func updateTab(to newTab: TabSelection) {
