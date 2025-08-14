@@ -52,6 +52,10 @@ extension RecipeListFeature: View {
                 }
             }
             .padding(.horizontal)
+            
+            if state.isLoading {
+                ProgressView()
+            }
         }
         .task { notify(.task) }
         .refreshable { notify(.refresh) }
