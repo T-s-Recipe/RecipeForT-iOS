@@ -67,10 +67,8 @@ private extension SignInFeature {
             let task = Task {
                 state.entity = .loading
                 
-                guard let idToken = auth.user.idToken?.tokenString,
-                      let authCode = Data(base64Encoded: idToken)
-                else { return state.entity = .initial }
-                
+                guard let idToken = auth.user.idToken?.tokenString else { return state.entity = .initial }
+                let authCode = Data(idToken.utf8)
                 let name = auth.user.profile?.name
                 let email = auth.user.profile?.email
                 
