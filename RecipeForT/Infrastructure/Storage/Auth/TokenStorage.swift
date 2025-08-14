@@ -8,7 +8,7 @@
 import Foundation
 import Security
 
-protocol TokenStorageProtocol {
+protocol TokenStorageProtocol: Sendable {
     typealias Query = [String: Any]
     
     func store(_ data: Data) throws

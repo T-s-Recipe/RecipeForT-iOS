@@ -37,8 +37,7 @@ struct TokenManagerPlugin: PluginType {
         guard case .success(let response) = result,
               let endpoint = target as? Endpoint,
               endpoint.receivingToken,
-              (200..<300).contains(response.statusCode),
-              let tokens = try? JSONDecoder().decode(Tokens.self, from: response.data)
+              (200..<300).contains(response.statusCode)
         else {
             if case .success(let response) = result {
                 print("[TokenManagerPlugin] - Failed to decode tokens from response: \(response)")
