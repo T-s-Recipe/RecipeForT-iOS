@@ -25,9 +25,14 @@ extension RootFeature: ViewFeature {
     func notify(_ event: UIEvent) {
         switch event {
         case .tabChanged(let to):
-            guard case .recipeUpload = to else { return state.updateTab(to: to) }
-            guard memberRepository.isLoggedIn else { return router.route(to: .loginView) }
-            router.route(to: .editRecipeView(recipe: nil))
+            switch to {
+            case .recipeUpload, .preferences:
+                guard memberRepository.isLoggedIn else { return router.route(to: .loginView) }
+                router.route(to: .editRecipeView(recipe: nil))
+                
+            default:
+                state.updateTab(to: to)
+            }
         }
     }
 }
