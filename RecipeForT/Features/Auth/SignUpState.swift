@@ -8,7 +8,7 @@
 import Foundation
 
 @MainActor @Observable
-final class SignUpState {
+final class SignUpState: ViewState {
     enum Entity: Equatable {
         case initial
         case loading
@@ -33,19 +33,11 @@ final class SignUpState {
     var temporalNickname: String = ""
     var nicknameFieldText: String = ""
     
-    private var tasks: [String: Task<Void, Never>] = [:]
+    var tasks: [String: Task<Void, Never>] = [:]
 }
 
 // MARK: - Interfaces
 extension SignUpState {
-    func cancelTask(for key: String) {
-        tasks[key]?.cancel()
-    }
-    
-    func storeTask(for key: String, task: Task<Void, Never>) {
-        tasks[key] = task
-    }
-    
     func updateTemporalNickname(_ text: String) {
         nicknameFieldText = text
         temporalNickname = text

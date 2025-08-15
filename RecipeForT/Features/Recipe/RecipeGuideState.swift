@@ -8,7 +8,7 @@
 import Foundation
 
 @MainActor @Observable
-final class RecipeGuideState {
+final class RecipeGuideState: ViewState {
     private(set) var servings: Decimal?
     private(set) var ingredients: [Ingredient]
     private(set) var sources: [Ingredient]
@@ -19,6 +19,8 @@ final class RecipeGuideState {
     private let originalServings: Decimal
     private let originalIngredients: [Ingredient]
     private let originalSources: [Ingredient]
+    
+    var tasks: [String : Task<Void, Never>] = [:]
     
     init(recipe: Recipe) {
         self.servings = recipe.servingsCount

@@ -9,7 +9,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 @Observable
-final class ImagePickerState {
+final class ImagePickerState: ViewState {
     enum Entity: Equatable {
         case idle
         case selected(ImageItem)
@@ -20,16 +20,10 @@ final class ImagePickerState {
     var isPhotoPickerPresented: Bool = false
     var isCameraPickerPresented: Bool = false
     
-    private var tasks: [String: Task<Void, Never>] = [:]
+    var tasks: [String: Task<Void, Never>] = [:]
 }
 
 // MARK: - Interfaces
 extension ImagePickerState {
-    func cancelTask(for key: String) {
-        tasks[key]?.cancel()
-    }
     
-    func storeTask(for key: String, task: Task<Void, Never>) {
-        tasks[key] = task
-    }
 }

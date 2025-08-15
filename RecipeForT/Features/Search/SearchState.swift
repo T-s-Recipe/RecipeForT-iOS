@@ -8,7 +8,7 @@
 import Foundation
 
 @MainActor @Observable
-final class SearchState {
+final class SearchState: ViewState {
     enum Entity {
         case initial
         case loading
@@ -18,16 +18,10 @@ final class SearchState {
     
     var entity: Entity = .initial
     var searchingText: String = ""
-    private var tasks: [String: Task<Void, Never>] = [:]
+    var tasks: [String: Task<Void, Never>] = [:]
 }
 
 // MARK: - Interfaces
 extension SearchState {
-    func cancelTask(for key: String) {
-        tasks[key]?.cancel()
-    }
     
-    func storeTask(for key: String, task: Task<Void, Never>) {
-        tasks[key] = task
-    }
 }

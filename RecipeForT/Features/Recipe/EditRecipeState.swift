@@ -8,7 +8,7 @@
 import Foundation
 
 @Observable @MainActor
-final class EditRecipeState {
+final class EditRecipeState: ViewState {
     var title = String()
     var image: ImageItem?
     var servings = String()
@@ -22,7 +22,7 @@ final class EditRecipeState {
     var sources = [Ingredient]()
     var steps = [CookingStep]()
     var isMustReadSheetPresented: Bool = false
-    private var tasks: [String: Task<Void, Never>] = [:]
+    var tasks: [String: Task<Void, Never>] = [:]
     
     init(recipe: Recipe?) {
         let recipe = recipe ?? .sample
@@ -39,11 +39,5 @@ final class EditRecipeState {
 
 // MARK: - Interfaces
 extension EditRecipeState {
-    func cancelTask(for key: String) {
-        tasks[key]?.cancel()
-    }
     
-    func storeTask(for key: String, task: Task<Void, Never>) {
-        tasks[key] = task
-    }
 }
