@@ -15,16 +15,27 @@ struct PreferenceFeature {
         var description: String { self.rawValue }
     }
     @Environment(\.router) private var router
+    @Environment(\.memberRepository) private var memberRepository
+    
+    @State private var user: Member?
 }
 
 // MARK: - ViewFeature Conformation
 extension PreferenceFeature: ViewFeature {
     enum UIEvent {
-        
+        case task
     }
     
     func notify(_ event: UIEvent) {
-        
+        switch event {
+        case .task:
+            switch memberRepository.authenticationState {
+            case .loggedOut, .pendingRegistration:
+                user = nil
+            case .loggedIn(let member):
+                user = member
+            }
+        }
     }
 }
 
@@ -79,14 +90,14 @@ extension PreferenceFeature: View {
     
     private var accountSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("User ID")
+            Text(user?.nickname ?? "Please Sign in")
                 .font(.title2.bold())
                 .padding(.vertical, 8)
             
             Text("Signed up with")
             
             HStack {
-                Text("Google")
+                Text(user?.provider.identifier ?? "Unknown Provider")
                 Spacer()
             }
             .padding()
