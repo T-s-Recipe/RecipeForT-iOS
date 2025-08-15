@@ -9,7 +9,14 @@ import SwiftUI
 
 @MainActor
 struct SearchFeature {
+    @Environment(\.router) private var router
+    @Environment(\.recipeRepository) private var recipeRepository
     @State private var state = SearchState()
+    
+    private let columns: [GridItem] = [
+        .init(.adaptive(minimum: 120, maximum: .infinity)),
+        .init(.adaptive(minimum: 120, maximum: .infinity))
+    ]
 }
 
 // MARK: - ViewFeature Conformation
@@ -20,7 +27,12 @@ extension SearchFeature: ViewFeature {
     }
     
     func notify(_ event: UIEvent) {
-        
+        switch event {
+        case .task:
+            break
+        case .submit(let keyword):
+            fetchSearchResults(keyword)
+        }
     }
 }
 
@@ -32,21 +44,75 @@ extension SearchFeature: View {
                 notify(.submit(state.searchingText))
             }
             
-            switch state.entity {
-            case .initial:
-                EmptyView()
-                
-            case .notFound:
-                unavailableView
-                
-            case .found(let recipes):
-                ScrollView(.vertical) {
-                    Text("WIP")
+            ScrollView(.vertical) {
+                switch state.entity {
+                case .initial:
+                    EmptyView()
+                case .loading:
+                    ProgressView()
+                case .loaded(let recipes):
+                    LazyVGrid(columns: columns) {
+                        ForEach(recipes) { recipe in
+                            recipeCell(recipe)
+                        }
+                    }
+                case .notFound:
+                    unavailableView
                 }
             }
         }
         .task {
             notify(.task)
+        }
+    }
+    
+    @ViewBuilder private func recipeCell(_ recipe: Recipe) -> some View {
+        VStack(spacing: 12) {
+            AsyncImage(url: recipe.imageURL) { image in
+                image
+                    .resizable()
+                    .aspectRatio(1, contentMode: .fill)
+            } placeholder: {
+                Rectangle()
+                    .fill(.gray.opacity(0.3))
+                    .aspectRatio(1, contentMode: .fill)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            
+            HStack{
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(recipe.name)
+                        .font(.headline)
+                    
+                    if let servingsCount = recipe.servingsCount,
+                       let cost = recipe.cost,
+                       let cookingTime = recipe.cookingTime {
+                        HStack(spacing: 8) {
+                            Text("\(servingsCount)serv")
+                            
+                            Circle()
+                                .frame(width: 4, height: 4)
+                            
+                            Text("$\(cost)")
+                            
+                            Circle()
+                                .frame(width: 4, height: 4)
+                            
+                            Text("\(cookingTime)min")
+                        }
+                        .font(.subheadline)
+                    }
+                    
+                    Text(recipe.authorNickname)
+                        .font(.subheadline)
+                }
+                
+                Spacer()
+            }
+        }
+        .clipShape(.rect)
+        .onTapGesture {
+            router.route(to: .recipeGuideView(recipe))
         }
     }
     
@@ -76,6 +142,19 @@ extension SearchFeature: View {
             
             Spacer()
         }
+    }
+}
+
+// MARK: - Methods
+private extension SearchFeature {
+    func fetchSearchResults(_ keyword: String) {
+        state.cancelTask(for: #function)
+        
+        let task = Task {
+            // TODO: 레시피 검색 기능 추가
+        }
+        
+        state.storeTask(for: #function, task: task)
     }
 }
 
