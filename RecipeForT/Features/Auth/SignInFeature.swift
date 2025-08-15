@@ -67,8 +67,7 @@ private extension SignInFeature {
             let task = Task {
                 state.entity = .loading
                 
-                guard let idTokenString = auth.user.idToken?.tokenString else { return state.entity = .initial }
-                let idToken = Data(idTokenString.utf8)
+                guard let idToken = auth.user.idToken?.tokenString else { return state.entity = .initial }
                 let name = auth.user.profile?.name
                 let email = auth.user.profile?.email
                 
@@ -100,7 +99,8 @@ private extension SignInFeature {
                 state.entity = .loading
                 
                 guard let credential = auth.credential as? ASAuthorizationAppleIDCredential,
-                      let idToken = credential.identityToken
+                      let idTokenData = credential.identityToken,
+                      let idToken = String(data: idTokenData, encoding: .utf8)
                 else { return state.entity = .initial }
                 
                 let name = credential.fullName?.givenName
