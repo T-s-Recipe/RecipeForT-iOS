@@ -135,6 +135,8 @@ private extension RecipeListFeature {
             } catch {
                 state.floaterItem = .init(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
             }
+            
+            state.isLoading = false
         }
         
         state.storeTask(for: #function, task: task)
@@ -160,6 +162,8 @@ private extension RecipeListFeature {
             } catch {
                 state.floaterItem = .init(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
             }
+            
+            state.isLoading = false
         }
         
         state.storeTask(for: #function, task: task)
