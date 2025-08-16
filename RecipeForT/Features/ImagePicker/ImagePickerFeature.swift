@@ -8,6 +8,7 @@
 import SwiftUI
 import PhotosUI
 
+@MainActor
 struct ImagePickerFeature {
     @Binding var selectedImageItem: ImageItem?
     @State private var selectedItem: PhotosPickerItem?
