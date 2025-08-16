@@ -83,6 +83,7 @@ extension RootFeature: View {
             .fullScreenCover(item: $router.fullScreenCover) { destination in
                 router.view(to: destination)
             }
+            .tint(.red)
         }
         .floater($router.floater)
     }
