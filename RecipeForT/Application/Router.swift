@@ -56,7 +56,7 @@ enum Route: Routable {
         case .editRecipeView: .fullScreenCover
         case .myPageView: .push
         case .recipeGuideView: .push
-        case .loginView: .push
+        case .loginView: .fullScreenCover
         }
     }
     

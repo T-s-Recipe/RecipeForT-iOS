@@ -38,6 +38,13 @@ extension AuthFeature: ViewFeature {
 extension AuthFeature: View {
     var body: some View {
         VStack {
+            HStack {
+                BackButton(.xmark)
+                
+                Spacer()
+            }
+            .padding(.horizontal)
+            
             VStack(spacing: 8) {
                 Text(Constants.title.description)
                     .font(.title.weight(.medium))
@@ -59,12 +66,6 @@ extension AuthFeature: View {
             
             Spacer()
             Spacer()
-        }
-        .navigationBarBackButtonHidden()
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                BackButton(.xmark)
-            }
         }
     }
 }
