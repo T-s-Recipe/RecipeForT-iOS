@@ -12,11 +12,11 @@ protocol MemberRepositoryProtocol {
     var authenticationState: AuthenticationState { get }
     var isLoggedIn: Bool { get }
     
-    func signIn(idToken: String, provider: OAuthProvider, name: String?, email: String?) async throws -> AuthenticationState
+    func signIn(idToken: String, provider: OAuthProvider, ci: String, name: String?, email: String?) async throws -> AuthenticationState
     func signUp(nickname: String) async throws -> AuthenticationState
     func fetchMember() async throws -> AuthenticationState
     func fetchMember(id: String) async throws -> AuthenticationState
-    func fetchMember(authCode: Data, provider: OAuthProvider) async throws -> AuthenticationState
+    func fetchMember(ci: String, provider: OAuthProvider) async throws -> AuthenticationState
     func logout() async throws -> AuthenticationState
     func fetchRandomNickname() async throws -> String
 }
@@ -56,7 +56,7 @@ final class MemberRepository {
 
 // MARK: - UserRepositoryProtocol Conformation
 extension MemberRepository: MemberRepositoryProtocol {
-    func signIn(idToken: String, provider: OAuthProvider, name: String?, email: String?) async throws -> AuthenticationState {
+    func signIn(idToken: String, provider: OAuthProvider, ci: String, name: String?, email: String?) async throws -> AuthenticationState {
         let requestDTO = SignInRequestDTO(
             idToken: idToken,
             providerIdentifier: provider.identifier,
@@ -64,6 +64,7 @@ extension MemberRepository: MemberRepositoryProtocol {
             email: email
         )
         let endpoint = Endpoint.signIn(requestDTO)
+        currentAttemptRecord = SignInAttemptRecord(idToken: idToken, provider: provider, ci: ci, name: name, email: email)
         
         do {
             let response = try await networkService.request(endpoint)
@@ -83,7 +84,7 @@ extension MemberRepository: MemberRepositoryProtocol {
         
         let requestDTO = SignUpRequestDTO(
             providerIdentifier: record.provider.identifier,
-            authID: record.authCode.base64EncodedString(),
+            ci: record.ci,
             name: record.name,
             email: record.email,
             nickname: nickname
@@ -118,7 +119,7 @@ extension MemberRepository: MemberRepositoryProtocol {
     func fetchMember(id: String) async throws -> AuthenticationState {
         guard authenticationState == .loggedOut else { return authenticationState }
         
-        let endpoint = Endpoint.fetchMemberInfo(id: id, providerID: nil, authID: nil)
+        let endpoint = Endpoint.fetchMemberInfo(id: id, providerID: nil, ci: nil)
         
         do {
             let response = try await networkService.request(endpoint)
@@ -133,10 +134,10 @@ extension MemberRepository: MemberRepositoryProtocol {
         }
     }
     
-    func fetchMember(authCode: Data, provider: OAuthProvider) async throws -> AuthenticationState {
+    func fetchMember(ci: String, provider: OAuthProvider) async throws -> AuthenticationState {
         guard authenticationState == .loggedOut else { return authenticationState }
         
-        let endpoint = Endpoint.fetchMemberInfo(id: nil, providerID: provider.identifier, authID: authCode.base64EncodedString())
+        let endpoint = Endpoint.fetchMemberInfo(id: nil, providerID: provider.identifier, ci: ci)
         
         do {
             let response = try await networkService.request(endpoint)

@@ -9,8 +9,9 @@ import Foundation
 
 /// 로그인 시도 기록
 struct SignInAttemptRecord {
-    let authCode: Data
+    let idToken: String
     let provider: OAuthProvider
+    let ci: String
     let name: String?
     let email: String?
 }

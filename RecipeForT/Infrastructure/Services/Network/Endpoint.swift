@@ -15,7 +15,7 @@ enum Endpoint {
     case logout(LogoutRequestDTO)                                                                               // 사용자 로그아웃
     
     // MARK: - Member
-    case fetchMemberInfo(id: String?, providerID: String?, authID: String?)                                     // 회원정보 단건 조회
+    case fetchMemberInfo(id: String?, providerID: String?, ci: String?)                                         // 회원정보 단건 조회
     case register(SignUpRequestDTO)                                                                             // 회원가입
     case fetchRandomNickname                                                                                    // 랜덤 닉네임 조회
     
@@ -111,7 +111,10 @@ extension Endpoint: TargetType {
     }
     
     var headers: [String : String]? {
-        nil
+        switch self {
+        case .signIn: ["App-Platform": "ios"]
+        default: .none
+        }
     }
     
     var validationType: ValidationType {
