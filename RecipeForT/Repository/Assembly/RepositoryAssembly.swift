@@ -22,5 +22,10 @@ struct RepositoryAssembly: Assembly {
             )
         }
         .inObjectScope(.container)
+        
+        container.register(SupportRepositoryProtocol.self) { resolver in
+            SupportRepository(networkService: resolver.resolve(NetworkServiceProtocol.self)!)
+        }
+        .inObjectScope(.container)
     }
 }

@@ -7,17 +7,16 @@
 
 import SwiftUI
 
+@MainActor
 struct PreferenceFeature {
-    enum Constants: String, CustomStringConvertible {
-        case noticeSectionTitle = "Notice"
-        case QNASectionTitle = "Q&A"
-        
-        var description: String { self.rawValue }
+    struct Constants {
+        static let providerGuidence = "Signed up with"
     }
+    
     @Environment(\.router) private var router
     @Environment(\.memberRepository) private var memberRepository
     
-    @State private var user: Member?
+    @State private var state = PreferenceState()
 }
 
 // MARK: - ViewFeature Conformation
@@ -29,12 +28,7 @@ extension PreferenceFeature: ViewFeature {
     func notify(_ event: UIEvent) {
         switch event {
         case .task:
-            switch memberRepository.authenticationState {
-            case .loggedOut, .pendingRegistration:
-                user = nil
-            case .loggedIn(let member):
-                user = member
-            }
+            task()
         }
     }
 }
@@ -42,43 +36,51 @@ extension PreferenceFeature: ViewFeature {
 // MARK: - View Conformation
 extension PreferenceFeature: View {
     var body: some View {
+        Group {
+            
+        }
         ScrollView(.vertical) {
             accountSection
             
             thickDivider
             
-            noticeSection(Constants.noticeSectionTitle.description)
+            AnnouncementContentPreviewListFeature(type: .notice, contents: state.announcements)
             
             thickDivider
             
-            noticeSection(Constants.QNASectionTitle.description)
+            AnnouncementContentPreviewListFeature(type: .QNA, contents: state.inquiries)
             
             thickDivider
             
-            HStack(spacing: 16) {
-                Text("App version")
-                Text("0.0.1")
-            }
-            .padding()
-            
-            HStack(spacing: 12) {
-                Button {
-                    // TODO: 계정 비활성화
-                } label: {
-                    Text("Deactivate Account")
+            VStack {
+                HStack(spacing: 16) {
+                    Text("App version")
+                    Text("0.0.1")
                 }
-                .tint(.gray)
+                .padding()
                 
-                Text("|")
+                Divider()
+                    .padding(.horizontal)
                 
-                Button {
-                    // TODO: 회원탈퇴
-                } label: {
-                    Text("Delete Account")
+                HStack(spacing: 12) {
+                    Button {
+                        // TODO: 계정 비활성화
+                    } label: {
+                        Text("Deactivate Account")
+                    }
+                    .tint(.gray)
+                    
+                    Text("|")
+                    
+                    Button {
+                        // TODO: 회원탈퇴
+                    } label: {
+                        Text("Delete Account")
+                    }
+                    .tint(.gray)
                 }
-                .tint(.gray)
+                .padding()
             }
-            .padding()
         }
     }
     
@@ -90,14 +92,14 @@ extension PreferenceFeature: View {
     
     private var accountSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(user?.nickname ?? "Please Sign in")
+            Text(state.user?.nickname ?? "Please Sign in")
                 .font(.title2.bold())
                 .padding(.vertical, 8)
             
-            Text("Signed up with")
+            Text(Constants.providerGuidence)
             
             HStack {
-                Text(user?.provider.identifier ?? "Unknown Provider")
+                Text(state.user?.provider.identifier ?? "Unknown Provider")
                 Spacer()
             }
             .padding()
@@ -109,42 +111,117 @@ extension PreferenceFeature: View {
         }
         .padding()
     }
+}
+
+// MARK: - Methods
+private extension PreferenceFeature {
+    func task() {
+        switch memberRepository.authenticationState {
+        case .loggedOut, .pendingRegistration:
+            state.user = nil
+        case .loggedIn(let member):
+            state.user = member
+        }
+        
+        // TODO: 공지사항, Q&A 가져오는 로직 추가
+    }
+}
+
+// MARK: - Subviews
+struct AnnouncementContentPreviewListFeature<Content: AnnouncementContent> {
+    enum SectionType {
+        case notice, QNA
+        
+        var title: String {
+            switch self {
+            case .notice: "Notice"
+            case .QNA: "Q&A"
+            }
+        }
+        
+        var emptyText: String {
+            switch self {
+            case .notice: "No notices at the moment."
+            case .QNA: "No Q&As at the moment."
+            }
+        }
+        
+        var seeMoreButtonLabel: String { "See more" }
+    }
     
-    @ViewBuilder
-    private func noticeSection(_ title: String) -> some View {
+    @Environment(\.router) private var router
+    
+    let type: SectionType
+    let contents: [Content]
+    
+    init(type: SectionType, contents: [Content]) {
+        self.type = type
+        self.contents = contents
+    }
+}
+
+// MARK: - ViewFeature Conformation
+extension AnnouncementContentPreviewListFeature: ViewFeature {
+    enum UIEvent {
+        case seeMoreButtonTapped
+    }
+    
+    func notify(_ event: UIEvent) {
+        switch event {
+        case .seeMoreButtonTapped:
+            router.route(to: .loginView)
+        }
+    }
+}
+
+// MARK: - View Conformation
+extension AnnouncementContentPreviewListFeature: View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
+            Text(type.title)
                 .font(.headline.bold())
             
-            cell()
-            Divider()
-            cell()
-            Divider()
-            cell()
-            
-            Button {
-                router.route(to: .loginView)
-            } label: {
-                Text("See more")
+            if contents.isEmpty {
+                Text(type.emptyText)
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(.clear)
-                            .strokeBorder(.gray)
-                    )
+                    .frame(height: 100)
+            } else {
+                LazyVStack {
+                    ForEach(contents) { content in
+                        cell(content)
+                        
+                        if content.id != contents.last?.id {
+                            Divider()
+                        }
+                    }
+                    
+                    if contents.count > 3 {
+                        Button {
+                            notify(.seeMoreButtonTapped)
+                        } label: {
+                            Text(type.seeMoreButtonLabel)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .fill(.clear)
+                                        .strokeBorder(.gray)
+                                )
+                        }
+                        .tint(.black)
+                    }
+                }
             }
-            .tint(.black)
         }
         .padding()
     }
     
-    @ViewBuilder private func cell() -> some View {
+    @ViewBuilder private func cell(_ content: Content) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("25.Jun.19")
+            Text(content.createdAt.toString(by: .ddMMMyy))
                 .foregroundStyle(.gray)
             
-            Text("Lorem ipsum dolor sit amet consectetur. Dictumst pellentesque vivamus quam turpis faucibus in. Posuere sed aliquet et egestas leo lacinia non egestas leo lacinia")
+            Text(content.content)
                 .lineLimit(3)
         }
     }

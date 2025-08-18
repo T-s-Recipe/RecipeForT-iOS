@@ -30,6 +30,7 @@ struct RecipeForTApp: App {
                 .environment(\.router, Router())
                 .environment(\.recipeRepository, resolver.resolve(RecipeRepositoryProtocol.self)!)
                 .environment(\.memberRepository, resolver.resolve(MemberRepositoryProtocol.self)!)
+                .environment(\.supportRepository, resolver.resolve(SupportRepositoryProtocol.self)!)
         }
     }
 }
