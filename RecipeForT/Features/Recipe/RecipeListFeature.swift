@@ -9,6 +9,11 @@ import SwiftUI
 
 @MainActor
 struct RecipeListFeature {
+    struct Constants {
+        static let errorPageTitle: String = "Something went wrong..\nPlease try again."
+        static let errorPageSubtitle: String = "If the issue persists,\nplease reach out to customer service."
+    }
+    
     @Environment(\.router) private var router
     @Environment(\.recipeRepository) private var recipeRepository
     @State private var state = RecipeListState()
@@ -44,24 +49,28 @@ extension RecipeListFeature: ViewFeature {
 // MARK: - View Conformation
 extension RecipeListFeature: View {
     var body: some View {
-        ScrollView(.vertical) {
-            LazyVGrid(columns: column, spacing: 8) {
-                ForEach(state.recipes) { recipe in
-                    recipeCell(recipe)
-                        .onAppear { notify(.needToMoreRecipes(pageID: recipe.id)) }
+        if state.isErrorOccurred {
+            unavailableView
+        } else {
+            ScrollView(.vertical) {
+                LazyVGrid(columns: column, spacing: 8) {
+                    ForEach(state.recipes) { recipe in
+                        recipeCell(recipe)
+                            .onAppear { notify(.needToMoreRecipes(pageID: recipe.id)) }
+                    }
+                }
+                .padding(.horizontal)
+                
+                if state.isLoading {
+                    ProgressView()
                 }
             }
-            .padding(.horizontal)
-            
-            if state.isLoading {
-                ProgressView()
+            .task { notify(.task) }
+            .refreshable { notify(.refresh) }
+            .onChange(of: state.floaterItem) { _, newValue in
+                guard let newValue else { return }
+                router.presentFloater(role: newValue.role, message: newValue.message)
             }
-        }
-        .task { notify(.task) }
-        .refreshable { notify(.refresh) }
-        .onChange(of: state.floaterItem) { _, newValue in
-            guard let newValue else { return }
-            router.presentFloater(role: newValue.role, message: newValue.message)
         }
     }
     
@@ -114,6 +123,33 @@ extension RecipeListFeature: View {
             router.route(to: .recipeGuideView(recipe))
         }
     }
+    
+    private var unavailableView: some View {
+        VStack(spacing: 20) {
+            Image(.frown)
+                .resizable()
+                .frame(width: 40, height: 40)
+            
+            Text("oops!")
+                .font(.title)
+            
+            Text(Constants.errorPageTitle)
+                .foregroundStyle(.secondary)
+            
+            Button {
+                notify(.refresh)
+            } label: {
+                Text("Refresh Page")
+                    .padding()
+                    .bold()
+            }
+            .buttonStyle(.roundedProminent(foreground: .white, background: .black, isLoading: state.isLoading))
+            
+            Text(Constants.errorPageSubtitle)
+                .foregroundStyle(.secondary)
+        }
+        .multilineTextAlignment(.center)
+    }
 }
 
 // MARK: - Methods
@@ -124,6 +160,7 @@ private extension RecipeListFeature {
         if isRefreshNeeded { state.flush() }
         
         let task = Task {
+            state.isErrorOccurred = false
             state.isLoading = true
             
             do {
@@ -133,7 +170,7 @@ private extension RecipeListFeature {
                 
                 state.recipes += page.recipes
             } catch {
-                state.floaterItem = .init(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
+                state.isErrorOccurred = true
             }
             
             state.isLoading = false

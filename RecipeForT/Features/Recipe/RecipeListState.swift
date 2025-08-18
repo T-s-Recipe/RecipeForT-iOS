@@ -11,6 +11,7 @@ import Foundation
 final class RecipeListState: ViewState {
     var recipes: [Recipe] = []
     var floaterItem: FloaterItem?
+    var isErrorOccurred: Bool = false
     var isLoading: Bool = false
     var nextPageID: String?
     let fetchLimit: Int32 = 16
