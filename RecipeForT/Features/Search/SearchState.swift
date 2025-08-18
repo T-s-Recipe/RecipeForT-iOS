@@ -10,13 +10,12 @@ import Foundation
 @MainActor @Observable
 final class SearchState: ViewState {
     enum Entity {
-        case initial
         case loading
         case loaded(recipes: [Recipe])
         case notFound
     }
     
-    var entity: Entity = .initial
+    var entity: Entity = .loaded(recipes: [])
     var searchingText: String = ""
     var tasks: [String: Task<Void, Never>] = [:]
 }

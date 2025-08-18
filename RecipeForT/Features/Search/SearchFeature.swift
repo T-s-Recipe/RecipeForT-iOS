@@ -9,6 +9,11 @@ import SwiftUI
 
 @MainActor
 struct SearchFeature {
+    struct Constants {
+        static let errorPageTitle: String = "No Result Found"
+        static let errorPageSubtitle: String = "Can't find what you're looking for?\nJust let us know and we'll add it for you!"
+    }
+    
     @Environment(\.router) private var router
     @Environment(\.recipeRepository) private var recipeRepository
     @State private var state = SearchState()
@@ -44,21 +49,19 @@ extension SearchFeature: View {
                 notify(.submit(state.searchingText))
             }
             
-            ScrollView(.vertical) {
-                switch state.entity {
-                case .initial:
-                    EmptyView()
-                case .loading:
-                    ProgressView()
-                case .loaded(let recipes):
+            switch state.entity {
+            case .loading:
+                ProgressView()
+            case .loaded(let recipes):
+                ScrollView(.vertical) {
                     LazyVGrid(columns: columns) {
                         ForEach(recipes) { recipe in
                             recipeCell(recipe)
                         }
                     }
-                case .notFound:
-                    unavailableView
                 }
+            case .notFound:
+                unavailableView
             }
         }
         .task {
@@ -125,20 +128,20 @@ extension SearchFeature: View {
                 .frame(width: 52, height: 52)
                 .foregroundStyle(.gray)
             
-            Text("No Result Found")
+            Text(Constants.errorPageTitle)
                 .fontWeight(.bold)
             
-            Text("Can't find what you're looking for?\nJust let us know and we'll add it for you!")
+            Text(Constants.errorPageSubtitle)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.gray)
             
-            Button {
-                // TODO: 무슨 비즈니스를 수행하는지 확인 필요
-            } label: {
-                Text("Request this recipe!")
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.black)
+//            Button {
+//                // TODO: 무슨 비즈니스를 수행하는지 확인 필요
+//            } label: {
+//                Text("Request this recipe!")
+//            }
+//            .buttonStyle(.borderedProminent)
+//            .tint(.black)
             
             Spacer()
         }
@@ -152,6 +155,7 @@ private extension SearchFeature {
         
         let task = Task {
             // TODO: 레시피 검색 기능 추가
+            state.entity = .notFound
         }
         
         state.storeTask(for: #function, task: task)
