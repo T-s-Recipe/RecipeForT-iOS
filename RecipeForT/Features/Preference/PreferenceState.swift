@@ -8,8 +8,10 @@
 import Foundation
 
 @MainActor @Observable
-final class PreferenceState {
+final class PreferenceState: ViewState {
     var user: Member?
     var inquiries: [Inquiry] = []
     var announcements: [Announcement] = []
+    
+    var tasks: [String: Task<Void, Never>] = [:]
 }
