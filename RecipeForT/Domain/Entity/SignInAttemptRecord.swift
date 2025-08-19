@@ -12,6 +12,4 @@ struct SignInAttemptRecord {
     let idToken: String
     let provider: OAuthProvider
     let ci: String
-    let name: String?
-    let email: String?
 }

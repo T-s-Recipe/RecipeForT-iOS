@@ -10,11 +10,9 @@ import Foundation
 struct SignInRequestDTO: Encodable {
     let idToken: String
     let providerIdentifier: String
-    let name: String?
-    let email: String?
     
     enum CodingKeys: String, CodingKey {
-        case idToken, name, email
+        case idToken
         case providerIdentifier = "provider"
     }
 }

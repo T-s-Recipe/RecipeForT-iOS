@@ -10,13 +10,11 @@ import Foundation
 struct SignUpRequestDTO: Encodable {
     let providerIdentifier: String
     let ci: String
-    let name: String?
-    let email: String?
     let nickname: String
     
     enum CodingKeys: String, CodingKey {
-        case name, email, nickname
-        case providerIdentifier = "oauthProvider"
-        case ci = "oauthId"
+        case nickname
+        case providerIdentifier = "oAuthProvider"
+        case ci = "oAuthId"
     }
 }

@@ -11,12 +11,10 @@ struct MemberResponseDTO: Decodable {
     let id: String
     let providerIdentifier: String
     let authID: String
-    let name: String?
-    let email: String?
     let nickname: String
     
     enum CodingKeys: String, CodingKey {
-        case id, name, email, nickname
+        case id, nickname
         case providerIdentifier = "oauthProvider"
         case authID = "oauthId"
     }
