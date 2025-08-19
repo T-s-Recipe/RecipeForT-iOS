@@ -12,7 +12,7 @@ protocol MemberRepositoryProtocol {
     var authenticationState: AuthenticationState { get }
     var isLoggedIn: Bool { get }
     
-    func signIn(idToken: String, provider: OAuthProvider, ci: String, name: String?, email: String?) async throws -> AuthenticationState
+    func signIn(idToken: String, provider: OAuthProvider) async throws -> AuthenticationState
     func signUp(nickname: String) async throws -> AuthenticationState
     func fetchMember() async throws -> AuthenticationState
     func fetchMember(id: String) async throws -> AuthenticationState
@@ -56,22 +56,22 @@ final class MemberRepository {
 
 // MARK: - UserRepositoryProtocol Conformation
 extension MemberRepository: MemberRepositoryProtocol {
-    func signIn(idToken: String, provider: OAuthProvider, ci: String, name: String?, email: String?) async throws -> AuthenticationState {
-        let requestDTO = SignInRequestDTO(
-            idToken: idToken,
-            providerIdentifier: provider.identifier,
-            name: name,
-            email: email
-        )
+    func signIn(idToken: String, provider: OAuthProvider) async throws -> AuthenticationState {
+        let requestDTO = SignInRequestDTO(idToken: idToken, providerIdentifier: provider.identifier)
         let endpoint = Endpoint.signIn(requestDTO)
-        currentAttemptRecord = SignInAttemptRecord(idToken: idToken, provider: provider, ci: ci, name: name, email: email)
         
         do {
             let response = try await networkService.request(endpoint)
-            let responseDTO = try decoder.decode(AuthTokenResponseDTO.self, from: response.data)
-            let tokens = responseDTO.toEntity()
-            authenticationState = .pendingRegistration(tokens: tokens)
-            return authenticationState
+            let responseDTO = try decoder.decode(SignInResponseDTO.self, from: response.data)
+            
+            guard responseDTO.isRegistered,
+                  let member = responseDTO.member?.toEntity()
+            else {
+                currentAttemptRecord = SignInAttemptRecord(idToken: idToken, provider: provider, ci: responseDTO.ci)
+                return .pendingRegistration
+            }
+            UserDefaults.standard.setValue(member.id, forKey: AppStorageKey.userID)
+            return .loggedIn(member: member)
         } catch let error as NetworkServiceError {
             throw MemberRepositoryError.networkError(error)
         } catch is DecodingError {
@@ -81,14 +81,7 @@ extension MemberRepository: MemberRepositoryProtocol {
     
     func signUp(nickname: String) async throws -> AuthenticationState {
         guard let record = currentAttemptRecord else { throw MemberRepositoryError.memberNotFound }
-        
-        let requestDTO = SignUpRequestDTO(
-            providerIdentifier: record.provider.identifier,
-            ci: record.ci,
-            name: record.name,
-            email: record.email,
-            nickname: nickname
-        )
+        let requestDTO = SignUpRequestDTO(providerIdentifier: record.provider.identifier, ci: record.ci, nickname: nickname)
         let endpoint = Endpoint.register(requestDTO)
         
         do {
@@ -159,7 +152,7 @@ extension MemberRepository: MemberRepositoryProtocol {
         let requestDTO = LogoutRequestDTO(refreshToken: tokens.refreshToken)
         let endpoint = Endpoint.logout(requestDTO)
         _ = try await networkService.request(endpoint)
-        
+        UserDefaults.standard.removeObject(forKey: AppStorageKey.userID)
         authenticationState = .loggedOut
         return .loggedOut
     }

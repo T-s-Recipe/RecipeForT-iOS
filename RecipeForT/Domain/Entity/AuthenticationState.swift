@@ -12,7 +12,7 @@ enum AuthenticationState {
     /// 비로그인
     case loggedOut
     /// 회원가입 대기 (임시계정 혹은 가입 절차 진행 중)
-    case pendingRegistration(tokens: Tokens)
+    case pendingRegistration
     /// 로그인
     case loggedIn(member: Member)
     
@@ -30,8 +30,8 @@ extension AuthenticationState: Equatable {
         switch (lhs, rhs) {
         case (.loggedOut, .loggedOut):
             return true
-        case (.pendingRegistration(let lhsTokens), .pendingRegistration(let rhsTokens)):
-            return lhsTokens.accessToken == rhsTokens.accessToken
+        case (.pendingRegistration, .pendingRegistration):
+            return true
         case (.loggedIn(let lhsMember), .loggedIn(let rhsMember)):
             return lhsMember.id == rhsMember.id
         default:
