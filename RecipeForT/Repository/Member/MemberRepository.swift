@@ -25,6 +25,7 @@ enum MemberRepositoryError: Error {
     case memberNotFound
     case authenticationFailed
     case decodingFailed
+    case encodingFailed
     case networkError(Error)
 }
 
@@ -52,6 +53,15 @@ final class MemberRepository {
         self.decoder = decoder
         self.encoder = encoder
     }
+    
+    private func recieveToken(tokens: Tokens) throws {
+        do {
+            let data = try encoder.encode(tokens)
+            try tokenStorage.store(data)
+        } catch {
+            throw MemberRepositoryError.encodingFailed
+        }
+    }
 }
 
 // MARK: - UserRepositoryProtocol Conformation
@@ -65,11 +75,15 @@ extension MemberRepository: MemberRepositoryProtocol {
             let responseDTO = try decoder.decode(SignInResponseDTO.self, from: response.data)
             
             guard responseDTO.isRegistered,
-                  let member = responseDTO.member?.toEntity()
+                  let member = responseDTO.member?.toEntity(),
+                  let accessToken = responseDTO.accessToken,
+                  let refreshToken = responseDTO.refreshToken
             else {
                 currentAttemptRecord = SignInAttemptRecord(idToken: idToken, provider: provider, ci: responseDTO.ci)
                 return .pendingRegistration
             }
+            let tokens = Tokens(accessToken: accessToken, refreshToken: refreshToken)
+            try recieveToken(tokens: tokens)
             UserDefaults.standard.setValue(member.id, forKey: AppStorageKey.userID)
             return .loggedIn(member: member)
         } catch let error as NetworkServiceError {
@@ -86,9 +100,11 @@ extension MemberRepository: MemberRepositoryProtocol {
         
         do {
             let response = try await networkService.request(endpoint)
-            let responseDTO = try decoder.decode(MemberResponseDTO.self, from: response.data)
-            let member = responseDTO.toEntity()
+            let responseDTO = try decoder.decode(SignUpResponseDTO.self, from: response.data)
+            let member = responseDTO.member.toEntity()
             authenticationState = .loggedIn(member: member)
+            let tokens = Tokens(accessToken: responseDTO.accessToken, refreshToken: responseDTO.refreshToken)
+            try recieveToken(tokens: tokens)
             UserDefaults.standard.setValue(member.id, forKey: AppStorageKey.userID)
             return authenticationState
         } catch let error as NetworkServiceError {
