@@ -31,7 +31,6 @@ enum MemberRepositoryError: Error {
 
 final class MemberRepository {
     private(set) var authenticationState: AuthenticationState = .loggedOut
-    private var currentAttemptRecord: SignInAttemptRecord?
     var isLoggedIn: Bool {
         guard case .loggedIn = authenticationState else { return false }
         return true
@@ -79,8 +78,9 @@ extension MemberRepository: MemberRepositoryProtocol {
                   let accessToken = responseDTO.accessToken,
                   let refreshToken = responseDTO.refreshToken
             else {
-                currentAttemptRecord = SignInAttemptRecord(idToken: idToken, provider: provider, ci: responseDTO.ci)
-                return .pendingRegistration
+                let record = SignInAttemptRecord(idToken: idToken, provider: provider, ci: responseDTO.ci)
+                authenticationState = .pendingRegistration(record: record)
+                return authenticationState
             }
             let tokens = Tokens(accessToken: accessToken, refreshToken: refreshToken)
             try recieveToken(tokens: tokens)
@@ -94,18 +94,13 @@ extension MemberRepository: MemberRepositoryProtocol {
     }
     
     func signUp(nickname: String) async throws -> AuthenticationState {
-        guard let record = currentAttemptRecord else { throw MemberRepositoryError.memberNotFound }
+        guard case .pendingRegistration(let record) = authenticationState else { throw MemberRepositoryError.memberNotFound }
         let requestDTO = SignUpRequestDTO(providerIdentifier: record.provider.identifier, ci: record.ci, nickname: nickname)
         let endpoint = Endpoint.register(requestDTO)
         
         do {
-            let response = try await networkService.request(endpoint)
-            let responseDTO = try decoder.decode(SignUpResponseDTO.self, from: response.data)
-            let member = responseDTO.member.toEntity()
-            authenticationState = .loggedIn(member: member)
-            let tokens = Tokens(accessToken: responseDTO.accessToken, refreshToken: responseDTO.refreshToken)
-            try recieveToken(tokens: tokens)
-            UserDefaults.standard.setValue(member.id, forKey: AppStorageKey.userID)
+            _ = try await networkService.request(endpoint)
+            authenticationState = try await signIn(idToken: record.idToken, provider: record.provider)
             return authenticationState
         } catch let error as NetworkServiceError {
             throw MemberRepositoryError.networkError(error)

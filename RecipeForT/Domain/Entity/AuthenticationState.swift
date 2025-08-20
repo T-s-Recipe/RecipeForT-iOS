@@ -12,7 +12,7 @@ enum AuthenticationState {
     /// 비로그인
     case loggedOut
     /// 회원가입 대기 (임시계정 혹은 가입 절차 진행 중)
-    case pendingRegistration
+    case pendingRegistration(record: SignInAttemptRecord)
     /// 로그인
     case loggedIn(member: Member)
     
