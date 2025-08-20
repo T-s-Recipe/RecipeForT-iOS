@@ -59,6 +59,8 @@ extension SignUpFeature: View {
                     .padding()
             }
             .buttonStyle(.roundedProminent(foreground: .white, background: .black, isLoading: isLoading))
+            .submitLabel(.continue)
+            .onSubmit { notify(.continueTapped) }
         }
         .task {
             notify(.task)
