@@ -74,7 +74,7 @@ extension MemberRepository: MemberRepositoryProtocol {
             let responseDTO = try decoder.decode(SignInResponseDTO.self, from: response.data)
             
             guard responseDTO.isRegistered,
-                  let member = responseDTO.member?.toEntity(),
+                  let memberID = responseDTO.memberID,
                   let accessToken = responseDTO.accessToken,
                   let refreshToken = responseDTO.refreshToken
             else {
@@ -84,8 +84,8 @@ extension MemberRepository: MemberRepositoryProtocol {
             }
             let tokens = Tokens(accessToken: accessToken, refreshToken: refreshToken)
             try recieveToken(tokens: tokens)
-            UserDefaults.standard.setValue(member.id, forKey: AppStorageKey.userID)
-            return .loggedIn(member: member)
+            UserDefaults.standard.setValue(memberID, forKey: AppStorageKey.userID)
+            return try await fetchMember(id: memberID)
         } catch let error as NetworkServiceError {
             throw MemberRepositoryError.networkError(error)
         } catch is DecodingError {
@@ -102,10 +102,16 @@ extension MemberRepository: MemberRepositoryProtocol {
             _ = try await networkService.request(endpoint)
             authenticationState = try await signIn(idToken: record.idToken, provider: record.provider)
             return authenticationState
-        } catch let error as NetworkServiceError {
-            throw MemberRepositoryError.networkError(error)
-        } catch is DecodingError {
-            throw MemberRepositoryError.decodingFailed
+        } catch {
+            authenticationState = .loggedOut
+            
+            if let networkError = error as? NetworkServiceError {
+                throw MemberRepositoryError.networkError(networkError)
+            } else if error is DecodingError {
+                throw MemberRepositoryError.decodingFailed
+            } else {
+                throw MemberRepositoryError.memberNotFound
+            }
         }
     }
     
