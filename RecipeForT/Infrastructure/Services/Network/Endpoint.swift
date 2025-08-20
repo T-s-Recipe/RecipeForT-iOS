@@ -28,7 +28,7 @@ enum Endpoint {
 extension Endpoint {
     var usingToken: Bool {
         switch self {
-        case .fetchMemberInfo, .uploadRecipe, .logout:
+        case .fetchMemberInfo, .uploadRecipe:
             true
         default:
             false

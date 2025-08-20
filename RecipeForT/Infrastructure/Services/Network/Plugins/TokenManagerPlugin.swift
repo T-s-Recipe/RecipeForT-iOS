@@ -46,7 +46,10 @@ struct TokenManagerPlugin: PluginType {
         }
         
         do {
-            try tokenStorage.store(response.data)
+            let responseDTO = try JSONDecoder().decode(AuthTokenResponseDTO.self, from: response.data)
+            let tokens = Tokens(accessToken: responseDTO.accessToken, refreshToken: responseDTO.refreshToken)
+            let data = try JSONEncoder().encode(tokens)
+            try tokenStorage.store(data)
         } catch {
             print("[TokenManagerPlugin] - Failed to store tokens: \(error.localizedDescription)")
         }
