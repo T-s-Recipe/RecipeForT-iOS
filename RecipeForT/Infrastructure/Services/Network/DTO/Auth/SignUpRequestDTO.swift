@@ -14,7 +14,7 @@ struct SignUpRequestDTO: Encodable {
     
     enum CodingKeys: String, CodingKey {
         case nickname
-        case providerIdentifier = "oAuthProvider"
-        case ci = "oAuthId"
+        case providerIdentifier = "oauthProvider"
+        case ci = "oauthId"
     }
 }

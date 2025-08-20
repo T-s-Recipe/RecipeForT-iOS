@@ -16,7 +16,7 @@ struct SignInResponseDTO: Decodable {
     
     enum CodingKeys: String, CodingKey {
         case accessToken, refreshToken
-        case ci = "oAuthId"
+        case ci = "oauthId"
         case isRegistered = "isMember"
         case member = "memberResponse"
     }
