@@ -12,12 +12,12 @@ struct SignInResponseDTO: Decodable {
     let refreshToken: String?
     let ci: String
     let isRegistered: Bool
-    let member: MemberResponseDTO?
+    let memberID: String?
     
     enum CodingKeys: String, CodingKey {
         case accessToken, refreshToken
         case ci = "oauthId"
         case isRegistered = "isMember"
-        case member = "memberResponse"
+        case memberID = "memberId"
     }
 }
