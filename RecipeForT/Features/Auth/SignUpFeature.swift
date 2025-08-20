@@ -20,6 +20,8 @@ struct SignUpFeature {
     @Environment(\.memberRepository) private var memberRepository
     @FocusState private var isFocused: Bool
     @State private var state = SignUpState()
+    
+    private var isLoading: Bool { state.entity == .loading }
 }
 
 // MARK: - ViewFeature Conformation
@@ -56,7 +58,7 @@ extension SignUpFeature: View {
                     .frame(maxWidth: .infinity)
                     .padding()
             }
-            .buttonStyle(RoundedProminentButtonStyle(false, .white, .black, false))
+            .buttonStyle(.roundedProminent(foreground: .white, background: .black, isLoading: isLoading))
         }
         .task {
             notify(.task)
@@ -117,4 +119,8 @@ private extension SignUpFeature {
         
         state.storeTask(for: #function, task: task)
     }
+}
+
+#Preview {
+    SignUpFeature()
 }

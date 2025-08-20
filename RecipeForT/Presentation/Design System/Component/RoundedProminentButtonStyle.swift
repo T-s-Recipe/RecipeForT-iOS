@@ -30,6 +30,7 @@ struct RoundedProminentButtonStyle: ButtonStyle {
             if isLoading {
                 ProgressView()
                     .tint(foregroundColor)
+                    .padding()
             } else {
                 configuration.label
             }
