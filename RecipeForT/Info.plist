@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>GIDClientID</key>
-	<string>$(GoogleIdentity_ClientID)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -17,5 +15,9 @@
 			</array>
 		</dict>
 	</array>
+	<key>GIDClientID</key>
+	<string>$(GoogleIdentity_ClientID)</string>
+	<key>NSCameraUsageDescription</key>
+    <string>사진을 촬영하기 위해 카메라를 사용합니다.</string>
 </dict>
 </plist>
