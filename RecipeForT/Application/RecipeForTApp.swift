@@ -31,6 +31,7 @@ struct RecipeForTApp: App {
                 .environment(\.recipeRepository, resolver.resolve(RecipeRepositoryProtocol.self)!)
                 .environment(\.memberRepository, resolver.resolve(MemberRepositoryProtocol.self)!)
                 .environment(\.supportRepository, resolver.resolve(SupportRepositoryProtocol.self)!)
+                .preferredColorScheme(.light)
         }
     }
 }
