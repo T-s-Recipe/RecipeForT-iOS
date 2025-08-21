@@ -38,12 +38,7 @@ struct TokenManagerPlugin: PluginType {
               let endpoint = target as? Endpoint,
               endpoint.receivingToken,
               (200..<300).contains(response.statusCode)
-        else {
-            if case .success(let response) = result {
-                print("[TokenManagerPlugin] - Failed to decode tokens from response: \(response)")
-            }
-            return
-        }
+        else { return }
         
         do {
             let responseDTO = try JSONDecoder().decode(AuthTokenResponseDTO.self, from: response.data)

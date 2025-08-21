@@ -65,7 +65,9 @@ final class NetworkService {
 // MARK: - NetworkServiceProtocol Conformation
 extension NetworkService: NetworkServiceProtocol {
     func request<T>(_ endpoint: T) async throws -> Response where T: TargetType {
-        try await provider.asyncRequest(MultiTarget(endpoint))
+        let response = try await provider.asyncRequest(MultiTarget(endpoint))
+        if let responseString = try? response.mapString() { print("\n\(responseString)") }
+        return response
     }
 }
 
