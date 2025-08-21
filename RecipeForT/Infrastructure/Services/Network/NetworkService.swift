@@ -46,8 +46,20 @@ final class NetworkService {
             print("Encodable mapping failed: \(error.localizedDescription)")
             return .encodingFailed
         case .statusCode(let response):
-            print("Invalid response. code: \(response.statusCode)")
-            return .invalidResponse
+            switch response.statusCode {
+            case 401:
+                print("Unauthorized error (401): \(response.description)")
+                return .unauthorized
+            case 404:
+                print("Resource not found (404): \(response.description)")
+                return .notFound
+            case 500..<600:
+                print("Server error (\(response.statusCode): \(response.description)")
+                return .serverError
+            default:
+                print("Invalid response: \(response.statusCode): \(response.description)")
+                return .invalidResponse
+            }
         case .underlying(let error, _):
             print("Underlying error")
             guard (error as NSError).code == NSURLErrorTimedOut else { return .networkFailure }
@@ -65,9 +77,17 @@ final class NetworkService {
 // MARK: - NetworkServiceProtocol Conformation
 extension NetworkService: NetworkServiceProtocol {
     func request<T>(_ endpoint: T) async throws -> Response where T: TargetType {
-        let response = try await provider.asyncRequest(MultiTarget(endpoint))
-        if let responseString = try? response.mapString() { print("\n\(responseString)") }
-        return response
+        do {
+            let response = try await provider.asyncRequest(MultiTarget(endpoint))
+            if let responseString = try? response.mapString() { print("\n\(responseString)") }
+            return response
+        } catch let error as MoyaError {
+            let mappedError = mapError(error)
+            throw mappedError
+        } catch {
+            print("Unexpected error: \(error.localizedDescription)")
+            throw NetworkServiceError.networkFailure
+        }
     }
 }
 
