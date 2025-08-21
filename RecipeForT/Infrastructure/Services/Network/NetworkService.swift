@@ -61,7 +61,7 @@ final class NetworkService {
                 return .invalidResponse
             }
         case .underlying(let error, _):
-            print("Underlying error")
+            print("Underlying error: \(error.localizedDescription)")
             guard (error as NSError).code == NSURLErrorTimedOut else { return .networkFailure }
             return .timeout
         case .requestMapping(let string):
