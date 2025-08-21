@@ -18,6 +18,7 @@ struct SignUpFeature {
     
     @Environment(\.router) private var router
     @Environment(\.memberRepository) private var memberRepository
+    @Binding var isPendingRegistration: Bool
     @FocusState private var isFocused: Bool
     @State private var state = SignUpState()
     
@@ -107,11 +108,13 @@ private extension SignUpFeature {
             return state.entity = .error(floraterItem)
         }
         
+        let submittedNickname: String = state.nicknameFieldText.isEmpty ? state.temporalNickname : state.nicknameFieldText
+        
         let task = Task {
             state.entity = .loading
             
             do {
-                let authenticationState = try await memberRepository.signUp(nickname: state.nicknameFieldText)
+                let authenticationState = try await memberRepository.signUp(nickname: submittedNickname)
                 state.entity = .loaded(authenticationState)
             } catch {
                 let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
@@ -121,8 +124,4 @@ private extension SignUpFeature {
         
         state.storeTask(for: #function, task: task)
     }
-}
-
-#Preview {
-    SignUpFeature()
 }

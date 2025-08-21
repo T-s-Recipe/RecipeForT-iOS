@@ -18,19 +18,20 @@ struct AuthFeature {
     @Environment(\.router) private var router
     @Environment(\.memberRepository) private var memberRepository
     
-    private var isPendingRegistration: Bool {
-        memberRepository.authenticationState.isRegistrationNeeded
-    }
+    @State private var isPendingRegistration: Bool = false
 }
 
 // MARK: - ViewFeature Conformation
 extension AuthFeature: ViewFeature {
     enum UIEvent {
-        
+        case onAppear
     }
     
     func notify(_ event: UIEvent) {
-        
+        switch event {
+        case .onAppear:
+            isPendingRegistration = memberRepository.authenticationState.isRegistrationNeeded
+        }
     }
 }
 
@@ -57,15 +58,18 @@ extension AuthFeature: View {
             
             VStack(spacing: 12) {
                 if isPendingRegistration {
-                    SignUpFeature()
+                    SignUpFeature(isPendingRegistration: $isPendingRegistration)
                 } else {
-                    SignInFeature()
+                    SignInFeature(isPendingRegistration: $isPendingRegistration)
                 }
             }
             .padding(.horizontal)
             
             Spacer()
             Spacer()
+        }
+        .onAppear {
+            notify(.onAppear)
         }
     }
 }

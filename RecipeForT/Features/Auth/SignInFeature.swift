@@ -13,6 +13,7 @@ import GoogleSignIn
 struct SignInFeature {
     @Environment(\.router) private var router
     @Environment(\.memberRepository) private var memberRepository
+    @Binding var isPendingRegistration: Bool
     @State private var state = SignInState()
 }
 
@@ -59,6 +60,14 @@ extension SignInFeature: View {
 
 // MARK: - Methods
 private extension SignInFeature {
+    func onAuthenticationStateChange(_ authState: AuthenticationState) {
+        switch authState {
+        case .loggedIn: router.dismiss()
+        case .pendingRegistration: isPendingRegistration = true
+        case .loggedOut: isPendingRegistration = false
+        }
+    }
+    
     func signInWithGoogle(_ result: Result<GIDSignInResult, Error>) {
         switch result {
         case .success(let auth):
@@ -72,8 +81,7 @@ private extension SignInFeature {
                 do {
                     let authState = try await memberRepository.signIn(idToken: idToken, provider: .google)
                     state.entity = .loaded(authState)
-                    
-                    if case .loggedIn = authState { router.dismiss() }
+                    onAuthenticationStateChange(authState)
                 } catch {
                     let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
                     state.entity = .error(item)
@@ -104,8 +112,7 @@ private extension SignInFeature {
                 do {
                     let authState = try await memberRepository.signIn(idToken: idToken, provider: .apple)
                     state.entity = .loaded(authState)
-                    
-                    if case .loggedIn = authState { router.dismiss() }
+                    onAuthenticationStateChange(authState)
                 } catch {
                     let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
                     state.entity = .error(item)
