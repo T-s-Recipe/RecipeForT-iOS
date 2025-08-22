@@ -138,6 +138,12 @@ private extension EditRecipeFeature {
                 )
                 
                 router.dismiss()
+            } catch let error as MemberRepositoryError {
+                switch error {
+                case .authenticationFailed, .memberNotFound:
+                    router.route(to: .loginView)
+                default: break
+                }
             } catch {
                 state.floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
             }
