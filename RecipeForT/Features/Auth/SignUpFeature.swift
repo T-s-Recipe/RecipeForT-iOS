@@ -19,6 +19,7 @@ struct SignUpFeature {
     @Environment(\.router) private var router
     @Environment(\.memberRepository) private var memberRepository
     @Binding var isPendingRegistration: Bool
+    @Binding var floaterItem: FloaterItem?
     @FocusState private var isFocused: Bool
     @State private var state = SignUpState()
     
@@ -30,6 +31,7 @@ extension SignUpFeature: ViewFeature {
     enum UIEvent {
         case task
         case continueTapped
+        case onFloaterItemChange(FloaterItem)
     }
     
     func notify(_ event: UIEvent) {
@@ -38,6 +40,8 @@ extension SignUpFeature: ViewFeature {
             fetchTemporalNickname()
         case .continueTapped:
             signUp()
+        case .onFloaterItemChange(let item):
+            floaterItem = item
         }
     }
 }
@@ -72,7 +76,7 @@ extension SignUpFeature: View {
             }
             
             guard case .error(let item) = state.entity else { return }
-            router.presentFloater(role: item.role, message: item.message)
+            notify(.onFloaterItemChange(item))
         }
     }
 }

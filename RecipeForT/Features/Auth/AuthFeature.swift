@@ -19,6 +19,7 @@ struct AuthFeature {
     @Environment(\.memberRepository) private var memberRepository
     
     @State private var isPendingRegistration: Bool = false
+    @State private var floaterItem: FloaterItem?
 }
 
 // MARK: - ViewFeature Conformation
@@ -58,9 +59,9 @@ extension AuthFeature: View {
             
             VStack(spacing: 12) {
                 if isPendingRegistration {
-                    SignUpFeature(isPendingRegistration: $isPendingRegistration)
+                    SignUpFeature(isPendingRegistration: $isPendingRegistration, floaterItem: $floaterItem)
                 } else {
-                    SignInFeature(isPendingRegistration: $isPendingRegistration)
+                    SignInFeature(isPendingRegistration: $isPendingRegistration, floaterItem: $floaterItem)
                 }
             }
             .padding(.horizontal)
@@ -71,6 +72,7 @@ extension AuthFeature: View {
         .onAppear {
             notify(.onAppear)
         }
+        .floater($floaterItem)
     }
 }
 

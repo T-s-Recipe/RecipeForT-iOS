@@ -14,6 +14,7 @@ struct SignInFeature {
     @Environment(\.router) private var router
     @Environment(\.memberRepository) private var memberRepository
     @Binding var isPendingRegistration: Bool
+    @Binding var floaterItem: FloaterItem?
     @State private var state = SignInState()
 }
 
@@ -22,6 +23,7 @@ extension SignInFeature: ViewFeature {
     enum UIEvent {
         case signInWithGoogle(result: Result<GIDSignInResult, Error>)
         case signInWithApple(result: Result<ASAuthorization, Error>)
+        case onFloaterItemChange(FloaterItem)
     }
     
     func notify(_ event: UIEvent) {
@@ -30,6 +32,8 @@ extension SignInFeature: ViewFeature {
             signInWithGoogle(result)
         case .signInWithApple(let result):
             signInWithApple(result)
+        case .onFloaterItemChange(let item):
+            floaterItem = item
         }
     }
 }
@@ -53,7 +57,7 @@ extension SignInFeature: View {
         }
         .onChange(of: state.entity) {
             guard case .error(let item) = state.entity else { return }
-            router.presentFloater(role: item.role, message: item.message)
+            notify(.onFloaterItemChange(item))
         }
     }
 }
@@ -126,4 +130,8 @@ private extension SignInFeature {
             state.entity = .error(item)
         }
     }
+}
+
+#Preview {
+    AuthFeature()
 }
