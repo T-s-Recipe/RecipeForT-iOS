@@ -26,9 +26,13 @@ extension RootFeature: ViewFeature {
         switch event {
         case .tabChanged(let to):
             switch to {
-            case .recipeUpload, .preferences:
+            case .recipeUpload:
                 guard memberRepository.isLoggedIn else { return router.route(to: .loginView) }
                 router.route(to: .editRecipeView(recipe: nil))
+                
+            case .preferences:
+                guard memberRepository.isLoggedIn else { return router.route(to: .loginView) }
+                state.updateTab(to: to)
                 
             default:
                 state.updateTab(to: to)
