@@ -13,7 +13,6 @@ import GoogleSignIn
 struct RecipeForTApp: App {
     private let resolver: Resolver = {
         let assembler = Assembler([
-            PresentationAssembly(),
             DomainAssembly(),
             RepositoryAssembly(),
             InfrastructureAssembly()

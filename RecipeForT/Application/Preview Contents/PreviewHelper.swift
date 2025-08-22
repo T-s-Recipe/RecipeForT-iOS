@@ -15,7 +15,6 @@ final class PreviewHelper {
     
     lazy var resolver: Resolver = {
         let assembler = Assembler([
-            PresentationAssembly(),
             DomainAssembly(),
             RepositoryAssembly(),
             InfrastructureAssembly()
