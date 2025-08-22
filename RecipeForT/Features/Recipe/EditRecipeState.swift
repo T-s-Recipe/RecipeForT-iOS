@@ -22,6 +22,8 @@ final class EditRecipeState: ViewState {
     var sources = [Ingredient]()
     var steps = [CookingStep]()
     var isMustReadSheetPresented: Bool = false
+    var floaterItem: FloaterItem?
+    var isLoading: Bool = false
     var tasks: [String: Task<Void, Never>] = [:]
     
     init(recipe: Recipe?) {

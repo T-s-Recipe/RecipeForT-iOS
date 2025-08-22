@@ -62,6 +62,7 @@ extension EditRecipeFeature: View {
         .fullScreenCover(isPresented: $state.isMustReadSheetPresented) {
             MustReadSheet()
         }
+        .floater($state.floaterItem)
     }
     
     @ViewBuilder private var navigationHeader: some View {
@@ -91,9 +92,14 @@ extension EditRecipeFeature: View {
             Button {
                 notify(.submitRecipe)
             } label: {
-                Text("등록")
+                if state.isLoading {
+                    ProgressView()
+                } else {
+                    Text("등록")
+                }
             }
             .tint(.black)
+            .disabled(state.isLoading)
         }
         .padding()
         
@@ -113,6 +119,9 @@ private extension EditRecipeFeature {
         state.cancelTask(for: #function)
         
         let task = Task {
+            state.isLoading = true
+            defer { state.isLoading = false }
+            
             let usecase = RecipeUploadUseCase(memberRepository: memberRepository, recipeRepository: recipeRepository)
             
             do {
@@ -127,8 +136,10 @@ private extension EditRecipeFeature {
                     sources: state.sources,
                     detailedSteps: state.steps
                 )
-            } catch {
                 
+                router.dismiss()
+            } catch {
+                state.floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
             }
         }
         
