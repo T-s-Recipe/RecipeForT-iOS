@@ -36,9 +36,6 @@ extension PreferenceFeature: ViewFeature {
 // MARK: - View Conformation
 extension PreferenceFeature: View {
     var body: some View {
-        Group {
-            
-        }
         ScrollView(.vertical) {
             accountSection
             
@@ -81,6 +78,9 @@ extension PreferenceFeature: View {
                 }
                 .padding()
             }
+        }
+        .task {
+            notify(.task)
         }
     }
     
