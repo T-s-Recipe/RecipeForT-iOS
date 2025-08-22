@@ -54,8 +54,8 @@ extension Endpoint: TargetType {
         case .reissueToken: "/auths/reissue"
         case .logout: "/auths/logout"
             
-        case .fetchMemberInfo: "/members"
-        case .register: "/members"
+        case .fetchMemberInfo: "/members/"
+        case .register: "/members/"
         case .fetchRandomNickname: "/members/nickname"
             
         case .uploadRecipe: "/recipes"

@@ -27,6 +27,7 @@ enum MemberRepositoryError: Error {
     case decodingFailed
     case encodingFailed
     case networkError(Error)
+    case storageError(Error)
 }
 
 final class MemberRepository {
@@ -57,8 +58,10 @@ final class MemberRepository {
         do {
             let data = try encoder.encode(tokens)
             try tokenStorage.store(data)
-        } catch {
+        } catch is EncodingError {
             throw MemberRepositoryError.encodingFailed
+        } catch {
+            throw MemberRepositoryError.storageError(error)
         }
     }
 }
@@ -74,18 +77,23 @@ extension MemberRepository: MemberRepositoryProtocol {
             let responseDTO = try decoder.decode(SignInResponseDTO.self, from: response.data)
             
             guard responseDTO.isRegistered,
-                  let memberID = responseDTO.memberID,
-                  let accessToken = responseDTO.accessToken,
-                  let refreshToken = responseDTO.refreshToken
+                  let memberID = responseDTO.authTokenResponse?.memberID,
+                  let tokens = responseDTO.authTokenResponse?.toEntity()
             else {
                 let record = SignInAttemptRecord(idToken: idToken, provider: provider, ci: responseDTO.ci)
                 authenticationState = .pendingRegistration(record: record)
                 return authenticationState
             }
-            let tokens = Tokens(accessToken: accessToken, refreshToken: refreshToken)
             try recieveToken(tokens: tokens)
             UserDefaults.standard.setValue(memberID, forKey: AppStorageKey.userID)
-            return try await fetchMember(id: memberID)
+            
+            let authState = try await fetchMember(id: memberID)
+            guard case .loggedIn = authState else {
+                authenticationState = .loggedOut
+                return authenticationState
+            }
+            authenticationState = authState
+            return authenticationState
         } catch let error as NetworkServiceError {
             throw MemberRepositoryError.networkError(error)
         } catch is DecodingError {

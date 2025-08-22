@@ -8,16 +8,13 @@
 import Foundation
 
 struct SignInResponseDTO: Decodable {
-    let accessToken: String?
-    let refreshToken: String?
+    let authTokenResponse: AuthTokenResponseDTO?
     let ci: String
     let isRegistered: Bool
-    let memberID: String?
     
     enum CodingKeys: String, CodingKey {
-        case accessToken, refreshToken
+        case authTokenResponse = "tokenResponse"
         case ci = "oauthId"
         case isRegistered = "isMember"
-        case memberID = "memberId"
     }
 }

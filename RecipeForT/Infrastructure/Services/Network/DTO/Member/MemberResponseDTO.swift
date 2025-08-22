@@ -10,21 +10,16 @@ import Foundation
 struct MemberResponseDTO: Decodable {
     let id: String
     let providerIdentifier: String
-    let authID: String
+    let ci: String
     let nickname: String
     
     enum CodingKeys: String, CodingKey {
         case id, nickname
         case providerIdentifier = "oauthProvider"
-        case authID = "oauthId"
+        case ci = "oauthId"
     }
     
     func toEntity() -> Member {
-        .init(
-            id: id,
-            nickname: nickname,
-            provider: OAuthProvider(identifier: providerIdentifier)!,
-            authorizationCode: Data(base64Encoded: authID)!
-        )
+        .init(id: id, nickname: nickname, provider: .init(identifier: providerIdentifier)!, ci: ci)
     }
 }

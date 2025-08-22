@@ -12,5 +12,5 @@ struct Member: Identifiable {
     let id: String
     let nickname: String
     let provider: OAuthProvider
-    let authorizationCode: Data
+    let ci: String
 }
