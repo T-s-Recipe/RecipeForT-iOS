@@ -52,6 +52,7 @@ extension SearchFeature: View {
             switch state.entity {
             case .loading:
                 ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .loaded(let recipes):
                 ScrollView(.vertical) {
                     LazyVGrid(columns: columns) {
@@ -155,7 +156,7 @@ private extension SearchFeature {
         
         let task = Task {
             // TODO: 레시피 검색 기능 추가
-            state.entity = .notFound
+            state.entity = .loading
         }
         
         state.storeTask(for: #function, task: task)
