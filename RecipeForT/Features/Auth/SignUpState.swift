@@ -30,7 +30,6 @@ final class SignUpState: ViewState {
     }
     
     var entity: Entity = .initial
-    var temporalNickname: String = ""
     var nicknameFieldText: String = ""
     
     var tasks: [String: Task<Void, Never>] = [:]
@@ -40,6 +39,5 @@ final class SignUpState: ViewState {
 extension SignUpState {
     func updateTemporalNickname(_ text: String) {
         nicknameFieldText = text
-        temporalNickname = text
     }
 }

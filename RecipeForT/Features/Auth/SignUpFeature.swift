@@ -9,11 +9,10 @@ import SwiftUI
 
 @MainActor
 struct SignUpFeature {
-    enum Constants: String, CustomStringConvertible {
-        case title = "User name"
-        case buttonLabel = "Continue"
-        
-        var description: String { self.rawValue }
+    struct Constants {
+        static let title = "User name"
+        static let buttonLabel = "Continue"
+        static let nicknameTextFieldPlaceholder = "Type your nickname"
     }
     
     @Environment(\.router) private var router
@@ -50,20 +49,20 @@ extension SignUpFeature: ViewFeature {
 extension SignUpFeature: View {
     var body: some View {
         VStack(spacing: 12) {
-            Text(Constants.title.description)
+            Text(Constants.title)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            RoundedTextField(state.temporalNickname, text: $state.nicknameFieldText, $isFocused)
+            RoundedTextField(Constants.nicknameTextFieldPlaceholder, text: $state.nicknameFieldText, $isFocused)
             
             Button {
                 notify(.continueTapped)
             } label: {
-                Text(Constants.buttonLabel.description)
+                Text(Constants.buttonLabel)
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
             }
-            .buttonStyle(.roundedProminent(foreground: .white, background: .black, isLoading: isLoading))
+            .buttonStyle(.roundedProminent(disabled: state.nicknameFieldText.isEmpty, foreground: .white, background: .black, isLoading: isLoading))
             .submitLabel(.continue)
             .onSubmit { notify(.continueTapped) }
         }
@@ -107,12 +106,12 @@ private extension SignUpFeature {
     func signUp() {
         state.cancelTask(for: #function)
         
-        guard state.temporalNickname.isEmpty == false else {
+        guard state.nicknameFieldText.isEmpty == false else {
             let floraterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
             return state.entity = .error(floraterItem)
         }
         
-        let submittedNickname: String = state.nicknameFieldText.isEmpty ? state.temporalNickname : state.nicknameFieldText
+        let submittedNickname: String = state.nicknameFieldText
         
         let task = Task {
             state.entity = .loading
