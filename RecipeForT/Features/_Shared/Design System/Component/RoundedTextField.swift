@@ -27,7 +27,7 @@ struct RoundedTextField: View {
         HStack {
             textFieldArea
                 .padding(.vertical, 8)
-                .padding(.horizontal, 12)
+                .padding(.trailing, 12)
             
             if text.isEmpty == false {
                 removeButton
