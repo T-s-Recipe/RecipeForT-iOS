@@ -33,7 +33,7 @@ struct SignInWithGoogleButton: View {
                 Image("googleLogo")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 20, height: 20)
+                    .frame(width: 14, height: 14)
                 
                 Text(label)
                     .font(.system(size: 17, weight: .medium))
@@ -47,7 +47,7 @@ struct SignInWithGoogleButton: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
-                    .stroke(strokeColor, lineWidth: 1)
+                    .stroke(strokeColor, lineWidth: 0.7)
             )
         }
     }
@@ -79,8 +79,8 @@ struct SignInWithGoogleButton: View {
     private var strokeColor: Color {
         switch colorScheme {
         case .dark: return .clear
-        case .light: return .black.opacity(0.7)
-        @unknown default: return .black.opacity(0.7)
+        case .light: return .black
+        @unknown default: return .black
         }
     }
     
@@ -104,7 +104,9 @@ struct SignInWithGoogleButton: View {
 }
 
 #Preview {
-    SignInWithGoogleButton(.continue) { _ in
-        
-    }
+//    SignInWithGoogleButton(.continue) { _ in
+//        
+//    }
+    
+    AuthFeature()
 }
