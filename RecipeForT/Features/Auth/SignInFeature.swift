@@ -87,7 +87,7 @@ private extension SignInFeature {
                     state.entity = .loaded(authState)
                     onAuthenticationStateChange(authState)
                 } catch {
-                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.loggedOut)
                     state.entity = .error(item)
                 }
             }
@@ -118,7 +118,7 @@ private extension SignInFeature {
                     state.entity = .loaded(authState)
                     onAuthenticationStateChange(authState)
                 } catch {
-                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.loggedOut)
                     state.entity = .error(item)
                 }
             }
