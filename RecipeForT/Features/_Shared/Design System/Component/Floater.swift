@@ -61,7 +61,7 @@ struct FloaterModifier: ViewModifier {
             if isPresented {
                 HStack(spacing: 10) {
                     Text(message)
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .lineLimit(3)
                         .multilineTextAlignment(.leading)
                     
@@ -70,12 +70,13 @@ struct FloaterModifier: ViewModifier {
                     } label: {
                         Image(systemName: "xmark")
                     }
+                    .tint(.secondary.opacity(0.45))
                 }
                 .padding()
                 .background(
                     Rectangle()
-                        .fill(role == .normal ? .cyan.opacity(0.3) : .pink.opacity(0.3))
-                        .strokeBorder(role == .normal ? .cyan : .pink)
+                        .fill(backgroundColor(role))
+                        .strokeBorder(backgroundBorderColor(role))
                 )
                 .transition(.push(from: .bottom))
                 .onAppear {
@@ -84,8 +85,23 @@ struct FloaterModifier: ViewModifier {
                     }
                 }
                 .safeAreaPadding(.bottom)
+                .padding([.horizontal, .bottom])
             }
         }
         .animation(.smooth, value: isPresented)
+    }
+    
+    private func backgroundColor(_ role: Role) -> Color {
+        switch role {
+        case .normal: .hex(0xE6F7FF)
+        case .warning: .hex(0xFFF1F0)
+        }
+    }
+    
+    private func backgroundBorderColor(_ role: Role) -> Color {
+        switch role {
+        case .normal: .hex(0x91D5FF)
+        case .warning: .hex(0xFFCCC7)
+        }
     }
 }
