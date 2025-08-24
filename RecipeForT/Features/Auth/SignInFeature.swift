@@ -75,6 +75,7 @@ private extension SignInFeature {
     func signInWithGoogle(_ result: Result<GIDSignInResult, Error>) {
         switch result {
         case .success(let auth):
+            state.entity = .initial
             state.cancelTask(for: #function)
             
             let task = Task {
@@ -103,6 +104,7 @@ private extension SignInFeature {
     func signInWithApple(_ result: Result<ASAuthorization, Error>) {
         switch result {
         case .success(let auth):
+            state.entity = .initial
             state.cancelTask(for: #function)
             
             let task = Task {
