@@ -18,6 +18,8 @@ enum Endpoint {
     case fetchMemberInfo(id: String?, providerID: String?, ci: String?)                                         // 회원정보 단건 조회
     case register(SignUpRequestDTO)                                                                             // 회원가입
     case fetchRandomNickname                                                                                    // 랜덤 닉네임 조회
+    case updateMemberInfo(UpdateMemberRequestDTO)                                                               // 회원정보 수정
+    case unregister(id: String)                                                                                 // 회원탈퇴
     
     // MARK: - Recipe
     case uploadRecipe(dtoData: Data, image: ImageItem?)                                                         // 레시피 등록
