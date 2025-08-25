@@ -1,25 +1,32 @@
 //
-//  MemberResponseDTO.swift
+//  SignUpResponseDTO.swift
 //  RecipeForT
 //
-//  Created by Swain Yun on 8/2/25.
+//  Created by Swain Yun on 8/25/25.
 //
 
 import Foundation
 
 struct MemberResponseDTO: Decodable {
-    let id: String
+    let userID: String
     let providerIdentifier: String
     let ci: String
     let nickname: String
+    let isVerified: Bool
     
     enum CodingKeys: String, CodingKey {
-        case id, nickname
+        case nickname, isVerified
+        case userID = "id"
         case providerIdentifier = "oauthProvider"
         case ci = "oauthId"
     }
     
     func toEntity() -> Member {
-        .init(id: id, nickname: nickname, provider: .init(identifier: providerIdentifier)!, ci: ci)
+        .init(
+            id: userID,
+            nickname: nickname,
+            provider: .init(identifier: providerIdentifier)!,
+            ci: ci
+        )
     }
 }
