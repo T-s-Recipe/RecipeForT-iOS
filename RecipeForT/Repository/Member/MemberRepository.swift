@@ -94,7 +94,7 @@ extension MemberRepository: MemberRepositoryProtocol {
         
         do {
             let response = try await networkService.request(endpoint)
-            let responseDTO = try decoder.decode(SignUpResponseDTO.self, from: response.data)
+            let responseDTO = try decoder.decode(MemberResponseDTO.self, from: response.data)
             return responseDTO.toEntity()
         } catch let error as NetworkServiceError {
             throw MemberRepositoryError.networkError(error)
