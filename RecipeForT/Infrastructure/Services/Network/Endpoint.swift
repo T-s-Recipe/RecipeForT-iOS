@@ -57,6 +57,8 @@ extension Endpoint: TargetType {
         case .fetchMemberInfo: "/members/"
         case .register: "/members/"
         case .fetchRandomNickname: "/members/nickname"
+        case .updateMemberInfo: "/members/"
+        case .unregister(let id): "members/\(id)"
             
         case .uploadRecipe: "/recipes"
         case .fetchRecipeDetail(let recipeID): "/recipes/\(recipeID)"
@@ -68,6 +70,8 @@ extension Endpoint: TargetType {
         switch self {
         case .fetchMemberInfo, .fetchRandomNickname, .fetchRecipeDetail, .fetchRecipeList: .get
         case .signIn, .reissueToken, .logout, .register, .uploadRecipe: .post
+        case .updateMemberInfo: .patch
+        case .unregister: .delete
         }
     }
     
@@ -89,6 +93,10 @@ extension Endpoint: TargetType {
         case .register(let request):
             return .requestJSONEncodable(request)
         case .fetchRandomNickname:
+            return .requestPlain
+        case .updateMemberInfo(let request):
+            return .requestJSONEncodable(request)
+        case .unregister:
             return .requestPlain
             
         case .uploadRecipe(let dtoData, let item):
@@ -115,12 +123,5 @@ extension Endpoint: TargetType {
     
     var validationType: ValidationType {
         .successCodes
-    }
-}
-
-// MARK: - AccessTokenAuthorizable Conformation
-extension Endpoint: AccessTokenAuthorizable {
-    var authorizationType: Moya.AuthorizationType? {
-        usingToken ? .bearer : .none
     }
 }
