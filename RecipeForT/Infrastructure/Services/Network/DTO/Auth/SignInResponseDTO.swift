@@ -17,4 +17,14 @@ struct SignInResponseDTO: Decodable {
         case ci = "oauthId"
         case isRegistered = "isMember"
     }
+    
+    func toEntity(idToken: String, provider: OAuthProvider) -> SignInAttemptRecord {
+        .init(
+            idToken: idToken,
+            provider: provider,
+            ci: ci,
+            userID: authTokenResponse?.memberID,
+            tokens: authTokenResponse?.toEntity()
+        )
+    }
 }

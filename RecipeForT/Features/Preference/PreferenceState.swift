@@ -9,7 +9,6 @@ import Foundation
 
 @MainActor @Observable
 final class PreferenceState: ViewState {
-    var user: Member?
     var inquiries: [Inquiry] = []
     var announcements: [Announcement] = []
     

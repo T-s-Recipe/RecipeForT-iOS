@@ -12,8 +12,7 @@ import GoogleSignIn
 @MainActor
 struct SignInFeature {
     @Environment(\.router) private var router
-    @Environment(\.memberRepository) private var memberRepository
-    @Binding var isPendingRegistration: Bool
+    @Environment(MemberModel.self) private var memberModel
     @Binding var floaterItem: FloaterItem?
     @State private var state = SignInState()
 }
@@ -55,41 +54,27 @@ extension SignInFeature: View {
             .signInWithAppleButtonStyle(.whiteOutline)
             .frame(height: 44)
         }
-        .onChange(of: state.entity) {
-            guard case .error(let item) = state.entity else { return }
-            notify(.onFloaterItemChange(item))
-        }
     }
 }
 
 // MARK: - Methods
 private extension SignInFeature {
-    func onAuthenticationStateChange(_ authState: AuthenticationState) {
-        switch authState {
-        case .loggedIn: router.dismiss()
-        case .pendingRegistration: isPendingRegistration = true
-        case .loggedOut: isPendingRegistration = false
-        }
-    }
-    
     func signInWithGoogle(_ result: Result<GIDSignInResult, Error>) {
         switch result {
         case .success(let auth):
-            state.entity = .initial
             state.cancelTask(for: #function)
             
             let task = Task {
-                state.entity = .loading
+                state.isLoading = true
+                defer { state.isLoading = false }
                 
-                guard let idToken = auth.user.idToken?.tokenString else { return state.entity = .initial }
+                guard let idToken = auth.user.idToken?.tokenString else { return }
                 
                 do {
-                    let authState = try await memberRepository.signIn(idToken: idToken, provider: .google)
-                    state.entity = .loaded(authState)
-                    onAuthenticationStateChange(authState)
+                    try await memberModel.login(idToken: idToken, provider: .google)
                 } catch {
-                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.loggedOut)
-                    state.entity = .error(item)
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+                    notify(.onFloaterItemChange(item))
                 }
             }
             
@@ -97,31 +82,29 @@ private extension SignInFeature {
             
         case .failure:
             let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
-            state.entity = .error(item)
+            notify(.onFloaterItemChange(item))
         }
     }
     
     func signInWithApple(_ result: Result<ASAuthorization, Error>) {
         switch result {
         case .success(let auth):
-            state.entity = .initial
             state.cancelTask(for: #function)
             
             let task = Task {
-                state.entity = .loading
+                state.isLoading = true
+                defer { state.isLoading = false }
                 
                 guard let credential = auth.credential as? ASAuthorizationAppleIDCredential,
                       let idTokenData = credential.identityToken,
                       let idToken = String(data: idTokenData, encoding: .utf8)
-                else { return state.entity = .initial }
+                else { return }
                 
                 do {
-                    let authState = try await memberRepository.signIn(idToken: idToken, provider: .apple)
-                    state.entity = .loaded(authState)
-                    onAuthenticationStateChange(authState)
+                    try await memberModel.login(idToken: idToken, provider: .apple)
                 } catch {
-                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.loggedOut)
-                    state.entity = .error(item)
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+                    notify(.onFloaterItemChange(item))
                 }
             }
             
@@ -129,7 +112,7 @@ private extension SignInFeature {
             
         case .failure:
             let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
-            state.entity = .error(item)
+            notify(.onFloaterItemChange(item))
         }
     }
 }

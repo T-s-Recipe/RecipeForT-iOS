@@ -10,6 +10,14 @@ import Swinject
 
 struct DomainAssembly: Assembly {
     func assemble(container: Container) {
-        
+        container.register(MemberModel.self) { resolver in
+            MemberModel(memberRepository: resolver.resolve(MemberRepositoryProtocol.self)!)
+        }
+        .inObjectScope(.container)
+    }
+    
+    func loaded(resolver: any Resolver) {
+        guard let memberModel = resolver.resolve(MemberModel.self) else { return }
+        memberModel.attemptAutoLogin()
     }
 }

@@ -10,7 +10,7 @@ import SwiftUI
 @MainActor
 struct EditRecipeFeature {
     @Environment(\.router) private var router
-    @Environment(\.memberRepository) private var memberRepository
+    @Environment(MemberModel.self) private var memberModel
     @Environment(\.recipeRepository) private var recipeRepository
     @State private var state: EditRecipeState
     
@@ -122,12 +122,13 @@ private extension EditRecipeFeature {
             state.isLoading = true
             defer { state.isLoading = false }
             
-            let usecase = RecipeUploadUseCase(memberRepository: memberRepository, recipeRepository: recipeRepository)
+            guard let member = memberModel.user else { return router.route(to: .loginView) }
             
             do {
-                try await usecase.execute(
-                    state.title,
-                    state.image,
+                _ = try await recipeRepository.create(
+                    userID: member.id,
+                    title: state.title,
+                    image: state.image,
                     servings: Decimal(string: state.servings),
                     cost: Decimal(string: state.cost),
                     cookingTime: Decimal(string: state.time),
@@ -138,12 +139,6 @@ private extension EditRecipeFeature {
                 )
                 
                 router.dismiss()
-            } catch let error as MemberRepositoryError {
-                switch error {
-                case .authenticationFailed, .memberNotFound:
-                    router.route(to: .loginView)
-                default: break
-                }
             } catch {
                 state.floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
             }

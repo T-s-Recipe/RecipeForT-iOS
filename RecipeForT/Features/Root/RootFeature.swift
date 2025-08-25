@@ -12,7 +12,7 @@ struct RootFeature {
     typealias TabSelection = RootState.TabSelection
     
     @Environment(\.router) private var router
-    @Environment(\.memberRepository) private var memberRepository
+    @Environment(MemberModel.self) private var memberModel: MemberModel
     @State private var state = RootState()
 }
 
@@ -27,11 +27,11 @@ extension RootFeature: ViewFeature {
         case .tabChanged(let to):
             switch to {
             case .recipeUpload:
-                guard memberRepository.isLoggedIn else { return router.route(to: .loginView) }
+                guard memberModel.isLoggedIn else { return router.route(to: .loginView) }
                 router.route(to: .editRecipeView(recipe: nil))
                 
             case .preferences:
-                guard memberRepository.isLoggedIn else { return router.route(to: .loginView) }
+                guard memberModel.isLoggedIn else { return router.route(to: .loginView) }
                 state.updateTab(to: to)
                 
             default:

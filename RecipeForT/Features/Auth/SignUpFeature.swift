@@ -16,13 +16,10 @@ struct SignUpFeature {
     }
     
     @Environment(\.router) private var router
-    @Environment(\.memberRepository) private var memberRepository
-    @Binding var isPendingRegistration: Bool
+    @Environment(MemberModel.self) private var memberModel
     @Binding var floaterItem: FloaterItem?
     @FocusState private var isFocused: Bool
     @State private var state = SignUpState()
-    
-    private var isLoading: Bool { state.entity == .loading }
 }
 
 // MARK: - ViewFeature Conformation
@@ -62,20 +59,16 @@ extension SignUpFeature: View {
                     .frame(maxWidth: .infinity)
                     .padding()
             }
-            .buttonStyle(.roundedProminent(disabled: state.nicknameFieldText.isEmpty, foreground: .white, background: .black, isLoading: isLoading))
+            .buttonStyle(.roundedProminent(disabled: state.nicknameFieldText.isEmpty, foreground: .white, background: .black, isLoading: state.isLoading))
             .submitLabel(.continue)
             .onSubmit { notify(.continueTapped) }
         }
         .task {
             notify(.task)
         }
-        .onChange(of: state.entity) {
-            if case .loaded(let authState) = state.entity, authState.isRegistrationNeeded == false {
-                router.dismiss()
-            }
-            
-            guard case .error(let item) = state.entity else { return }
-            notify(.onFloaterItemChange(item))
+        .onChange(of: memberModel.isLoggedIn) { _, isLoggedIn in
+            guard isLoggedIn else { return }
+            router.dismiss()
         }
     }
 }
@@ -86,17 +79,16 @@ private extension SignUpFeature {
         state.cancelTask(for: #function)
         
         let task = Task {
-            state.entity = .loading
-            
-            defer { state.entity = .initial }
+            state.isLoading = true
+            defer { state.isLoading = false }
             
             do {
-                let temporalNickname = try await memberRepository.fetchRandomNickname()
+                let temporalNickname = try await memberModel.fetchRandomNickname()
                 guard Task.isCancelled == false else { return }
                 state.updateTemporalNickname(temporalNickname)
             } catch {
                 let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
-                state.entity = .error(floaterItem)
+                notify(.onFloaterItemChange(floaterItem))
             }
         }
         
@@ -107,21 +99,21 @@ private extension SignUpFeature {
         state.cancelTask(for: #function)
         
         guard state.nicknameFieldText.isEmpty == false else {
-            let floraterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
-            return state.entity = .error(floraterItem)
+            let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
+            return notify(.onFloaterItemChange(floaterItem))
         }
         
         let submittedNickname: String = state.nicknameFieldText
         
         let task = Task {
-            state.entity = .loading
+            state.isLoading = true
+            defer { state.isLoading = false }
             
             do {
-                let authenticationState = try await memberRepository.signUp(nickname: submittedNickname)
-                state.entity = .loaded(authenticationState)
+                try await memberModel.register(nickname: submittedNickname)
             } catch {
                 let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
-                state.entity = .error(floaterItem)
+                notify(.onFloaterItemChange(floaterItem))
             }
         }
         

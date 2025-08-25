@@ -12,4 +12,7 @@ struct SignInAttemptRecord {
     let idToken: String
     let provider: OAuthProvider
     let ci: String
+    let userID: String?
+    let tokens: Tokens?
+    var isRegistrationNeeded: Bool { userID == nil || tokens == nil }
 }

@@ -16,7 +16,7 @@ struct AuthFeature {
     }
     
     @Environment(\.router) private var router
-    @Environment(\.memberRepository) private var memberRepository
+    @Environment(MemberModel.self) private var memberModel: MemberModel
     
     @State private var isPendingRegistration: Bool = false
     @State private var floaterItem: FloaterItem?
@@ -25,14 +25,11 @@ struct AuthFeature {
 // MARK: - ViewFeature Conformation
 extension AuthFeature: ViewFeature {
     enum UIEvent {
-        case onAppear
+        
     }
     
     func notify(_ event: UIEvent) {
-        switch event {
-        case .onAppear:
-            isPendingRegistration = memberRepository.authenticationState.isRegistrationNeeded
-        }
+        
     }
 }
 
@@ -58,19 +55,16 @@ extension AuthFeature: View {
             Spacer()
             
             VStack(spacing: 12) {
-                if isPendingRegistration {
-                    SignUpFeature(isPendingRegistration: $isPendingRegistration, floaterItem: $floaterItem)
+                if memberModel.isPendingRegistration {
+                    SignUpFeature(floaterItem: $floaterItem)
                 } else {
-                    SignInFeature(isPendingRegistration: $isPendingRegistration, floaterItem: $floaterItem)
+                    SignInFeature(floaterItem: $floaterItem)
                 }
             }
             .padding(.horizontal)
             
             Spacer()
             Spacer()
-        }
-        .onAppear {
-            notify(.onAppear)
         }
         .floater($floaterItem)
     }

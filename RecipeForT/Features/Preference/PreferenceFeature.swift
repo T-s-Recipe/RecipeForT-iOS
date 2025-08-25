@@ -14,7 +14,7 @@ struct PreferenceFeature {
     }
     
     @Environment(\.router) private var router
-    @Environment(\.memberRepository) private var memberRepository
+    @Environment(MemberModel.self) private var memberModel
     
     @State private var state = PreferenceState()
 }
@@ -92,14 +92,14 @@ extension PreferenceFeature: View {
     
     private var accountSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(state.user?.nickname ?? "Please Sign in")
+            Text(memberModel.user?.nickname ?? "Please Sign in")
                 .font(.title2.bold())
                 .padding(.vertical, 8)
             
             Text(Constants.providerGuidence)
             
             HStack {
-                Text(state.user?.provider.identifier ?? "Unknown Provider")
+                Text(memberModel.user?.provider.identifier ?? "Unknown Provider")
                 Spacer()
             }
             .padding()
@@ -116,13 +116,6 @@ extension PreferenceFeature: View {
 // MARK: - Methods
 private extension PreferenceFeature {
     func task() {
-        switch memberRepository.authenticationState {
-        case .loggedOut, .pendingRegistration:
-            state.user = nil
-        case .loggedIn(let member):
-            state.user = member
-        }
-        
         // TODO: 공지사항, Q&A 가져오는 로직 추가
     }
 }

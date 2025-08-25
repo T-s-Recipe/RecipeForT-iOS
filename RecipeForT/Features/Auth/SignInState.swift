@@ -9,14 +9,7 @@ import Foundation
 
 @MainActor @Observable
 final class SignInState: ViewState {
-    enum Entity: Equatable {
-        case initial
-        case loading
-        case loaded(AuthenticationState)
-        case error(FloaterItem)
-    }
-    
-    var entity: Entity = .initial
+    var isLoading: Bool = false
     var tasks: [String: Task<Void, Never>] = [:]
 }
 

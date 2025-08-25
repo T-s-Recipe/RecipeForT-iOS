@@ -27,8 +27,8 @@ struct RecipeForTApp: App {
                     GIDSignIn.sharedInstance.handle(url)
                 }
                 .environment(\.router, Router())
+                .environment(resolver.resolve(MemberModel.self)!)
                 .environment(\.recipeRepository, resolver.resolve(RecipeRepositoryProtocol.self)!)
-                .environment(\.memberRepository, resolver.resolve(MemberRepositoryProtocol.self)!)
                 .environment(\.supportRepository, resolver.resolve(SupportRepositoryProtocol.self)!)
                 .preferredColorScheme(.light)
         }
