@@ -16,9 +16,13 @@ struct TokenManagerPlugin: PluginType {
     }
     
     func prepare(_ request: URLRequest, target: any TargetType) -> URLRequest {
-        guard let endpoint = target as? Endpoint,
+        guard let wrappedTarget = target as? MultiTarget,
+              let endpoint = wrappedTarget.target as? Endpoint,
               endpoint.usingToken
-        else{ return request }
+        else {
+            print("[TokenManagerPlugin] - Skipping token for request, Endpoint: \(target)")
+            return request
+        }
         
         var mutableRequest = request
         
