@@ -10,6 +10,7 @@ import Foundation
 struct CreateRecipeRequestDTO: Encodable {
     let authorID: String
     let title: String
+    let imageURL: URL?
     let servings: Decimal
     let cost: Decimal?
     let cookingTime: Decimal?
@@ -21,6 +22,7 @@ struct CreateRecipeRequestDTO: Encodable {
     init(
         authorID: String,
         title: String,
+        imageURL: URL?,
         servings: Decimal?,
         cost: Decimal?,
         cookingTime: Decimal?,
@@ -31,6 +33,7 @@ struct CreateRecipeRequestDTO: Encodable {
     ) {
         self.authorID = authorID
         self.title = title
+        self.imageURL = imageURL
         self.servings = servings ?? 4
         self.cost = cost
         self.cookingTime = cookingTime
@@ -43,6 +46,7 @@ struct CreateRecipeRequestDTO: Encodable {
     init(
         authorID: String,
         title: String,
+        imageURL: URL?,
         servings: Decimal?,
         cost: Decimal?,
         cookingTime: Decimal?,
@@ -53,6 +57,7 @@ struct CreateRecipeRequestDTO: Encodable {
     ) {
         self.authorID = authorID
         self.title = title
+        self.imageURL = imageURL
         self.servings = servings ?? 4
         self.cost = cost
         self.cookingTime = cookingTime
@@ -64,6 +69,7 @@ struct CreateRecipeRequestDTO: Encodable {
     
     enum CodingKeys: String, CodingKey {
         case title, servings, cost, cookingTime, basicIngredients
+        case imageURL = "imageUrl"
         case authorID = "authorId"
         case notes = "memo"
         case sources = "sourceIngredients"

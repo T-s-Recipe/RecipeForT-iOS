@@ -23,12 +23,19 @@ protocol RecipeRepositoryProtocol {
     func read(pageID: String?, limit: Int32) async throws -> RecipePage
     func update(_ recipe: Recipe) async throws
     func delete(_ id: UInt64) async throws
+    
+    func uploadRecipeImage(_ item: ImageItem?) async throws -> URL?
 }
 
 enum RecipeRepositoryError: Error {
+    enum Reason {
+        case emptyImage
+    }
+    
+    case notSupported(Reason)
     case encodingFailed
     case decodingFailed
-    case networkError(Error)
+    case networkError(NetworkServiceError)
 }
 
 final class RecipeRepository {
@@ -61,9 +68,12 @@ extension RecipeRepository: RecipeRepositoryProtocol {
         sources: [Ingredient],
         detailedSteps: [CookingStep]
     ) async throws -> Recipe {
+        let imageURL = try await uploadRecipeImage(image)
+        
         let requestDTO = CreateRecipeRequestDTO(
             authorID: userID,
             title: title,
+            imageURL: imageURL,
             servings: servings,
             cost: cost,
             cookingTime: cookingTime,
@@ -73,9 +83,9 @@ extension RecipeRepository: RecipeRepositoryProtocol {
             detailedSteps: detailedSteps
         )
         
+        let endpoint = Endpoint.uploadRecipe(requestDTO)
+        
         do {
-            let dtoData = try encoder.encode(requestDTO)
-            let endpoint = Endpoint.uploadRecipe(dtoData: dtoData, image: image)
             let response = try await networkService.request(endpoint)
             let responseDTO = try decoder.decode(CreateRecipeResponseDTO.self, from: response.data)
             let recipe = responseDTO.toEntity()
@@ -110,5 +120,20 @@ extension RecipeRepository: RecipeRepositoryProtocol {
     
     func delete(_ id: UInt64) async throws {
         
+    }
+    
+    func uploadRecipeImage(_ item: ImageItem?) async throws -> URL? {
+        guard let item else { throw RecipeRepositoryError.notSupported(.emptyImage) }
+        let endpoint = Endpoint.uploadRecipeImage(item)
+        
+        do {
+            let response = try await networkService.request(endpoint)
+            let urlString = try response.mapString()
+            return URL(string: urlString)
+        } catch let error as NetworkServiceError {
+            throw RecipeRepositoryError.networkError(error)
+        } catch {
+            throw RecipeRepositoryError.decodingFailed
+        }
     }
 }

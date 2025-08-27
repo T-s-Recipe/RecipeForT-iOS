@@ -24,7 +24,8 @@ enum Endpoint {
     case fetchMemberInfo                                                                                        // 회원정보 조회
     
     // MARK: - Recipe
-    case uploadRecipe(dtoData: Data, image: ImageItem?)                                                         // 레시피 등록
+    case uploadRecipe(CreateRecipeRequestDTO)                                                                   // 레시피 등록
+    case uploadRecipeImage(ImageItem)                                                                           // 레시피 이미지 등록
     case fetchRecipeDetail(recipeID: String)                                                                    // 레시피 단건 조회
     case fetchRecipeList(nextPageID: String?, limit: Int32)                                                     // 페이지네이션 레시피 목록 조회
 }
@@ -32,7 +33,7 @@ enum Endpoint {
 extension Endpoint {
     var usingToken: Bool {
         switch self {
-        case .fetchMemberInfo, .uploadRecipe:
+        case .fetchMemberInfo, .uploadRecipe, .uploadRecipeImage:
             true
         default:
             false
@@ -66,6 +67,7 @@ extension Endpoint: TargetType {
         case .checkNicknameDuplication: "/members/nickname/check"
             
         case .uploadRecipe: "/recipes"
+        case .uploadRecipeImage: "/recipes/image-upload"
         case .fetchRecipeDetail(let recipeID): "/recipes/\(recipeID)"
         case .fetchRecipeList: "/recipes/recent"
         }
@@ -74,7 +76,7 @@ extension Endpoint: TargetType {
     var method: Moya.Method {
         switch self {
         case .fetchMemberInfo, .fetchRandomNickname, .fetchRecipeDetail, .fetchRecipeList, .checkNicknameDuplication: .get
-        case .signIn, .reissueToken, .logout, .register, .uploadRecipe: .post
+        case .signIn, .reissueToken, .logout, .register, .uploadRecipe, .uploadRecipeImage: .post
         case .updateMemberInfo: .patch
         case .unregister: .delete
         }
@@ -103,11 +105,11 @@ extension Endpoint: TargetType {
             let params = ["nickname": nickname]
             return .requestParameters(parameters: params, encoding: URLEncoding.queryString)
             
-        case .uploadRecipe(let dtoData, let item):
-            var formData = [MultipartFormData]()
-            formData.append(.init(provider: .data(dtoData), name: "request"))
-            if let item { formData.append(.init(provider: .data(item.data), name: item.filename, mimeType: item.mimeType)) }
-            return .uploadMultipart(formData)
+        case .uploadRecipe(let dto):
+            return .requestJSONEncodable(dto)
+        case .uploadRecipeImage(let item):
+            var formData = MultipartFormData(provider: .data(item.data), name: "imageFile", fileName: item.filename, mimeType: item.mimeType)
+            return .uploadMultipart([formData])
         case .fetchRecipeDetail:
             return .requestPlain
         case .fetchRecipeList(let nextPageID, let limit):
