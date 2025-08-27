@@ -39,7 +39,7 @@ extension MemberModel {
             
             guard record.isRegistrationNeeded == false else { return authenticationState = .pendingRegistration(record: record) }
             
-            let member = try await memberRepository.fetchMember(ci: record.ci, provider: record.provider)
+            let member = try await memberRepository.fetchMember()
             authenticationState = .loggedIn(member: member)
         } catch {
             authenticationState = .loggedOut
@@ -51,6 +51,7 @@ extension MemberModel {
         guard case .pendingRegistration(let record) = authenticationState else { return }
         
         do {
+            // TODO: 닉네임 중복 여부 확인 로직 추가
             let member = try await memberRepository.signUp(ci: record.ci, provider: record.provider, nickname: nickname)
             authenticationState = .loggedIn(member: member)
         } catch {
