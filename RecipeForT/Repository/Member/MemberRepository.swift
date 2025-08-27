@@ -12,10 +12,9 @@ protocol MemberRepositoryProtocol {
     func signIn(idToken: String, provider: OAuthProvider) async throws -> SignInAttemptRecord
     func signUp(ci: String, provider: OAuthProvider, nickname: String) async throws -> Member
     func fetchMember() async throws -> Member
-    func fetchMember(id: String) async throws -> Member
-    func fetchMember(ci: String, provider: OAuthProvider) async throws -> Member
     func logout() async
     func fetchRandomNickname() async throws -> String
+    func isNicknameDuplicated(nickname: String) async throws -> Bool
 }
 
 enum MemberRepositoryError: Error {
@@ -104,26 +103,7 @@ extension MemberRepository: MemberRepositoryProtocol {
     }
     
     func fetchMember() async throws -> Member {
-        guard let userID = UserDefaults.standard.string(forKey: AppStorageKey.userID) else { throw MemberRepositoryError.memberNotFound }
-        return try await fetchMember(id: userID)
-    }
-    
-    func fetchMember(id: String) async throws -> Member {
-        let endpoint = Endpoint.fetchMemberInfo(id: id, providerID: nil, ci: nil)
-        
-        do {
-            let response = try await networkService.request(endpoint)
-            let responseDTO = try decoder.decode(MemberResponseDTO.self, from: response.data)
-            return responseDTO.toEntity()
-        } catch let error as NetworkServiceError {
-            throw MemberRepositoryError.networkError(error)
-        } catch is DecodingError {
-            throw MemberRepositoryError.decodingFailed
-        }
-    }
-    
-    func fetchMember(ci: String, provider: OAuthProvider) async throws -> Member {
-        let endpoint = Endpoint.fetchMemberInfo(id: nil, providerID: provider.identifier, ci: ci)
+        let endpoint = Endpoint.fetchMemberInfo
         
         do {
             let response = try await networkService.request(endpoint)
@@ -161,5 +141,19 @@ extension MemberRepository: MemberRepositoryProtocol {
         
         guard let nickname = String(data: response.data, encoding: .utf8) else { throw MemberRepositoryError.decodingFailed }
         return nickname
+    }
+    
+    func isNicknameDuplicated(nickname: String) async throws -> Bool {
+        let endpoint = Endpoint.checkNicknameDuplication(nickname: nickname)
+        
+        do {
+            let response = try await networkService.request(endpoint)
+            let isDuplicated = try response.mapString() == "true" ? true : false
+            return isDuplicated
+        } catch let error as NetworkServiceError {
+            throw MemberRepositoryError.networkError(error)
+        } catch {
+            throw MemberRepositoryError.decodingFailed
+        }
     }
 }

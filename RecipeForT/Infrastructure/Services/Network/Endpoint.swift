@@ -15,11 +15,13 @@ enum Endpoint {
     case logout(LogoutRequestDTO)                                                                               // 사용자 로그아웃
     
     // MARK: - Member
-    case fetchMemberInfo(id: String?, providerID: String?, ci: String?)                                         // 회원정보 단건 조회
+    // case fetchMemberInfo(id: String?, providerID: String?, ci: String?)                                      // 회원정보 단건 조회 (Deprecated)
     case register(SignUpRequestDTO)                                                                             // 회원가입
-    case fetchRandomNickname                                                                                    // 랜덤 닉네임 조회
-    case updateMemberInfo(UpdateMemberRequestDTO)                                                               // 회원정보 수정
     case unregister(id: String)                                                                                 // 회원탈퇴
+    case updateMemberInfo(UpdateMemberRequestDTO)                                                               // 회원정보 수정
+    case fetchRandomNickname                                                                                    // 랜덤 닉네임 조회
+    case checkNicknameDuplication(nickname: String)                                                             // 닉네임 중복 여부 조회
+    case fetchMemberInfo                                                                                        // 회원정보 조회
     
     // MARK: - Recipe
     case uploadRecipe(dtoData: Data, image: ImageItem?)                                                         // 레시피 등록
@@ -56,11 +58,12 @@ extension Endpoint: TargetType {
         case .reissueToken: "/auths/reissue"
         case .logout: "/auths/logout"
             
-        case .fetchMemberInfo: "/members/"
+        case .fetchMemberInfo: "/members/me"
         case .register: "/members/"
         case .fetchRandomNickname: "/members/nickname"
         case .updateMemberInfo: "/members/"
-        case .unregister(let id): "members/\(id)"
+        case .unregister(let id): "/members/\(id)"
+        case .checkNicknameDuplication: "/members/nickname/check"
             
         case .uploadRecipe: "/recipes"
         case .fetchRecipeDetail(let recipeID): "/recipes/\(recipeID)"
@@ -70,7 +73,7 @@ extension Endpoint: TargetType {
     
     var method: Moya.Method {
         switch self {
-        case .fetchMemberInfo, .fetchRandomNickname, .fetchRecipeDetail, .fetchRecipeList: .get
+        case .fetchMemberInfo, .fetchRandomNickname, .fetchRecipeDetail, .fetchRecipeList, .checkNicknameDuplication: .get
         case .signIn, .reissueToken, .logout, .register, .uploadRecipe: .post
         case .updateMemberInfo: .patch
         case .unregister: .delete
@@ -86,12 +89,8 @@ extension Endpoint: TargetType {
         case .logout(let request):
             return .requestJSONEncodable(request)
         
-        case .fetchMemberInfo(let id, let providerID, let authID):
-            var parameters = [String: Any]()
-            if let id { parameters["memberId"] = id }
-            if let providerID { parameters["oAuthProvider"] = providerID }
-            if let authID { parameters["oAuthId"] = authID }
-            return .requestParameters(parameters: parameters, encoding: URLEncoding.queryString)
+        case .fetchMemberInfo:
+            return .requestPlain
         case .register(let request):
             return .requestJSONEncodable(request)
         case .fetchRandomNickname:
@@ -100,6 +99,9 @@ extension Endpoint: TargetType {
             return .requestJSONEncodable(request)
         case .unregister:
             return .requestPlain
+        case .checkNicknameDuplication(let nickname):
+            let params = ["nickname": nickname]
+            return .requestParameters(parameters: params, encoding: URLEncoding.queryString)
             
         case .uploadRecipe(let dtoData, let item):
             var formData = [MultipartFormData]()
