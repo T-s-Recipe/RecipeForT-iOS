@@ -27,21 +27,17 @@ struct RecipeListFeature {
 // MARK: - ViewFeature Conformation
 extension RecipeListFeature: ViewFeature {
     enum UIEvent {
-        case task
         case needToMoreRecipes(pageID: String)
         case refresh
     }
     
     func notify(_ event: UIEvent) {
         switch event {
-        case .task:
-            loadRecipes(false)
-            
         case .needToMoreRecipes(let pageID):
             loadMoreRecipes(pageID)
             
         case .refresh:
-            loadRecipes(true)
+            loadRecipes()
         }
     }
 }
@@ -65,7 +61,7 @@ extension RecipeListFeature: View {
                     ProgressView()
                 }
             }
-            .task { notify(.task) }
+            .task { notify(.refresh) }
             .refreshable { notify(.refresh) }
             .onChange(of: state.floaterItem) { _, newValue in
                 guard let newValue else { return }
@@ -154,10 +150,10 @@ extension RecipeListFeature: View {
 
 // MARK: - Methods
 private extension RecipeListFeature {
-    func loadRecipes(_ isRefreshNeeded: Bool) {
+    func loadRecipes() {
         state.cancelTask(for: #function)
         
-        if isRefreshNeeded { state.flush() }
+        if state.isRefreshNeeded { state.flush() }
         
         let task = Task {
             state.isErrorOccurred = false
@@ -174,6 +170,7 @@ private extension RecipeListFeature {
             }
             
             state.isLoading = false
+            state.isRefreshNeeded = false
         }
         
         state.storeTask(for: #function, task: task)
