@@ -27,6 +27,7 @@ extension SignUpFeature: ViewFeature {
     enum UIEvent {
         case task
         case continueTapped
+        case onNicknameChange(nickname: String)
         case onFloaterItemChange(FloaterItem)
     }
     
@@ -36,6 +37,8 @@ extension SignUpFeature: ViewFeature {
             fetchTemporalNickname()
         case .continueTapped:
             signUp()
+        case .onNicknameChange(let nickname):
+            validateNickname(nickname)
         case .onFloaterItemChange(let item):
             floaterItem = item
         }
@@ -49,7 +52,21 @@ extension SignUpFeature: View {
             Text(Constants.title)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            RoundedTextField(Constants.nicknameTextFieldPlaceholder, text: $state.nicknameFieldText, $isFocused)
+            RoundedTextField(
+                Constants.nicknameTextFieldPlaceholder,
+                text: bind(
+                    { $0.state.nicknameFieldText },
+                    onChangeNotify: { .onNicknameChange(nickname: $0) }
+                ),
+                $isFocused,
+                state: state.nicknameValidationState.isError ? .onError : .normal
+            )
+            
+            if let message = state.nicknameValidationMessage {
+                Text(message)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(.hex(0xE51220))
+            }
             
             Button {
                 notify(.continueTapped)
@@ -59,7 +76,7 @@ extension SignUpFeature: View {
                     .frame(maxWidth: .infinity)
                     .padding()
             }
-            .buttonStyle(.roundedProminent(disabled: state.nicknameFieldText.isEmpty, foreground: .white, background: .black, isLoading: state.isLoading))
+            .buttonStyle(.roundedProminent(disabled: state.continueButtonDisabled, foreground: .white, background: .black, isLoading: state.isLoading))
             .submitLabel(.continue)
             .onSubmit { notify(.continueTapped) }
         }
@@ -75,6 +92,25 @@ extension SignUpFeature: View {
 
 // MARK: - Methods
 private extension SignUpFeature {
+    func validateNickname(_ nickname: String) {
+        state.cancelTask(for: #function)
+        
+        let task = Task {
+            do {
+                try await Task.sleep(for: .seconds(0.5))
+                state.isLoading = true
+                defer { state.isLoading = false }
+                
+                state.updateTemporalNickname(nickname)
+                state.nicknameValidationState = await memberModel.validateNickname(nickname)
+            } catch {
+                
+            }
+        }
+        
+        state.storeTask(for: #function, task: task)
+    }
+    
     func fetchTemporalNickname() {
         state.cancelTask(for: #function)
         
@@ -85,7 +121,7 @@ private extension SignUpFeature {
             do {
                 let temporalNickname = try await memberModel.fetchRandomNickname()
                 guard Task.isCancelled == false else { return }
-                state.updateTemporalNickname(temporalNickname)
+                notify(.onNicknameChange(nickname: temporalNickname))
             } catch {
                 let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
                 notify(.onFloaterItemChange(floaterItem))

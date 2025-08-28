@@ -8,19 +8,33 @@
 import SwiftUI
 
 struct RoundedTextField: View {
-    @Binding var text: String
+    enum State {
+        case onError
+        case normal
+        
+        var strokeBorderColor: Color {
+            switch self {
+            case .onError: .hex(0xE51220)
+            case .normal: .black
+            }
+        }
+    }
     
+    @Binding var text: String
+    private let state: State
     private var isFocused: FocusState<Bool>.Binding
     private let titleKey: String
     
     init(
         _ prompt: String,
         text: Binding<String>,
-        _ isFocused: FocusState<Bool>.Binding
+        _ isFocused: FocusState<Bool>.Binding,
+        state: State = .normal
     ) {
         self.titleKey = prompt
         self._text = text
         self.isFocused = isFocused
+        self.state = state
     }
     
     var body: some View {
@@ -38,8 +52,13 @@ struct RoundedTextField: View {
         .background(
             RoundedRectangle(cornerRadius: 5)
                 .fill(.clear)
-                .strokeBorder(isFocused.wrappedValue ? .black : .gray)
+                .strokeBorder(currentBorderColor)
         )
+    }
+    
+    private var currentBorderColor: Color {
+        if state == .onError { return state.strokeBorderColor }
+        return isFocused.wrappedValue ? state.strokeBorderColor : .gray
     }
     
     private var textFieldArea: some View {
