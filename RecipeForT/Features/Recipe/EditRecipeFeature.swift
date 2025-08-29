@@ -9,9 +9,12 @@ import SwiftUI
 
 @MainActor
 struct EditRecipeFeature {
+    typealias MissingField = EditRecipeState.MissingField
+    
     @Environment(\.router) private var router
     @Environment(MemberModel.self) private var memberModel
     @Environment(\.recipeRepository) private var recipeRepository
+    @FocusState private var focusedField: MissingField?
     @State private var state: EditRecipeState
     
     init(recipe: Recipe?) {
@@ -45,17 +48,27 @@ extension EditRecipeFeature: View {
         VStack {
             navigationHeader
             
-            ScrollView(.vertical) {
-                LazyVStack {
-                    RecipeBaseInfoFeature(state: state)
-                    
-                    thickDivider
-                    
-                    RecipeIngredientsInfoFeature(state: state)
-                    
-                    thickDivider
-                    
-                    RecipeDetailedStepInfoFeature(state: state)
+            ScrollViewReader { proxy in
+                ScrollView(.vertical) {
+                    LazyVStack {
+                        RecipeBaseInfoFeature(state: state)
+                            .id(MissingField.image.scrollTargetID)
+                        
+                        thickDivider
+                        
+                        RecipeIngredientsInfoFeature(state: state)
+                            .id(MissingField.ingredients.scrollTargetID)
+                        
+                        thickDivider
+                        
+                        RecipeDetailedStepInfoFeature(state: state)
+                            .id(MissingField.steps.scrollTargetID)
+                    }
+                }
+                .onChange(of: state.missingField) { _, newValue in
+                    guard let newValue else { return }
+                    focusedField = newValue
+                    scrollToMissingField(newValue, using: proxy)
                 }
             }
         }
@@ -63,6 +76,7 @@ extension EditRecipeFeature: View {
             MustReadSheet()
         }
         .floater($state.floaterItem)
+        .focusable()
     }
     
     @ViewBuilder private var navigationHeader: some View {
@@ -95,7 +109,7 @@ extension EditRecipeFeature: View {
                 if state.isLoading {
                     ProgressView()
                 } else {
-                    Text("등록")
+                    Text("OK")
                 }
             }
             .tint(.black)
@@ -115,8 +129,40 @@ extension EditRecipeFeature: View {
 
 // MARK: - Methods
 private extension EditRecipeFeature {
+    func scrollToMissingField(_ field: MissingField, using proxy: ScrollViewProxy) {
+        withAnimation {
+            proxy.scrollTo(field.scrollTargetID, anchor: .center)
+        }
+    }
+    
+    func checkRequiredFields() -> Bool {
+        guard state.image != nil else {
+            state.missingField = .image
+            return false
+        }
+        
+        guard state.title.isEmpty == false else {
+            state.missingField = .title
+            return false
+        }
+        
+        guard state.ingredients.isEmpty == false else {
+            state.missingField = .ingredients
+            return false
+        }
+        
+        guard state.steps.isEmpty == false else {
+            state.missingField = .steps
+            return false
+        }
+        
+        return true
+    }
+    
     func uploadRecipe() {
         state.cancelTask(for: #function)
+        
+        guard checkRequiredFields() else { return }
         
         let task = Task {
             state.isLoading = true

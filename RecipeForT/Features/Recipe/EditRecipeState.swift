@@ -9,6 +9,18 @@ import Foundation
 
 @Observable @MainActor
 final class EditRecipeState: ViewState {
+    enum MissingField: Hashable {
+        case image, title, ingredients, steps
+        
+        var scrollTargetID: String {
+            switch self {
+            case .image, .title: "baseInfoSection"
+            case .ingredients: "ingredientsSection"
+            case .steps: "stepsSection"
+            }
+        }
+    }
+    
     var title = String()
     var image: ImageItem?
     var servings = String()
@@ -24,6 +36,7 @@ final class EditRecipeState: ViewState {
     var isMustReadSheetPresented: Bool = false
     var floaterItem: FloaterItem?
     var isLoading: Bool = false
+    var missingField: MissingField?
     var tasks: [String: Task<Void, Never>] = [:]
     
     init(recipe: Recipe?) {
