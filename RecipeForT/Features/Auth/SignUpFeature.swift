@@ -79,6 +79,7 @@ extension SignUpFeature: View {
             .buttonStyle(.roundedProminent(disabled: state.continueButtonDisabled, foreground: .white, background: .black, isLoading: state.isLoading))
             .submitLabel(.continue)
             .onSubmit { notify(.continueTapped) }
+            .disabled(state.continueButtonDisabled)
         }
         .task {
             notify(.task)
@@ -102,9 +103,7 @@ private extension SignUpFeature {
                 defer { state.isLoading = false }
                 
                 state.updateTemporalNickname(nickname)
-                let nul = await memberModel.validateNickname(nickname)
-                print(nul)
-                state.nicknameValidationState = nul
+                state.nicknameValidationState = await memberModel.validateNickname(nickname)
             } catch {
                 
             }

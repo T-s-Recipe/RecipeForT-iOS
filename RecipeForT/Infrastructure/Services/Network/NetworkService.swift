@@ -78,6 +78,7 @@ final class NetworkService {
 extension NetworkService: NetworkServiceProtocol {
     func request<T>(_ endpoint: T) async throws -> Response where T: TargetType {
         do {
+            print("[NetworkService] - Requesting: \(String(describing: endpoint))")
             let response = try await provider.asyncRequest(MultiTarget(endpoint))
             if let responseString = try? response.mapString() { print("\n\(responseString)") }
             return response

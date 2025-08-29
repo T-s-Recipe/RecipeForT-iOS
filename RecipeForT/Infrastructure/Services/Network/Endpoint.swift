@@ -33,7 +33,7 @@ enum Endpoint {
 extension Endpoint {
     var usingToken: Bool {
         switch self {
-        case .fetchMemberInfo, .uploadRecipe, .uploadRecipeImage:
+        case .fetchMemberInfo, .uploadRecipe, .uploadRecipeImage, .checkNicknameDuplication:
             true
         default:
             false
