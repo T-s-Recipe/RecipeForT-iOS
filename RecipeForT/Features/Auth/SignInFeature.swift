@@ -54,6 +54,10 @@ extension SignInFeature: View {
             .signInWithAppleButtonStyle(.whiteOutline)
             .frame(height: 44)
         }
+        .onChange(of: memberModel.isLoggedIn) { _, isLoggedIn in
+            guard isLoggedIn else { return }
+            router.dismiss()
+        }
     }
 }
 
@@ -73,7 +77,7 @@ private extension SignInFeature {
                 do {
                     try await memberModel.login(idToken: idToken, provider: .google)
                 } catch {
-                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
                     notify(.onFloaterItemChange(item))
                 }
             }
@@ -81,7 +85,7 @@ private extension SignInFeature {
             state.storeTask(for: #function, task: task)
             
         case .failure:
-            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
             notify(.onFloaterItemChange(item))
         }
     }
@@ -103,7 +107,7 @@ private extension SignInFeature {
                 do {
                     try await memberModel.login(idToken: idToken, provider: .apple)
                 } catch {
-                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
                     notify(.onFloaterItemChange(item))
                 }
             }
@@ -111,7 +115,7 @@ private extension SignInFeature {
             state.storeTask(for: #function, task: task)
             
         case .failure:
-            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
             notify(.onFloaterItemChange(item))
         }
     }

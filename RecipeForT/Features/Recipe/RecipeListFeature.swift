@@ -194,7 +194,7 @@ private extension RecipeListFeature {
                 state.recipes += page.recipes
                 state.nextPageID = page.nextPageID
             } catch {
-                state.floaterItem = .init(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
+                state.floaterItem = .init(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
             }
             
             state.isLoading = false

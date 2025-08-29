@@ -322,7 +322,7 @@ private extension RecipeGuideFeature {
                 recipe.sources = recipeDetails.sources
                 recipe.detailedSteps = recipeDetails.detailedSteps
             } catch {
-                let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
+                let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
                 state.floaterItem = item
             }
         }

@@ -14,7 +14,6 @@ struct EditRecipeFeature {
     @Environment(\.router) private var router
     @Environment(MemberModel.self) private var memberModel
     @Environment(\.recipeRepository) private var recipeRepository
-    @FocusState private var focusedField: MissingField?
     @State private var state: EditRecipeState
     
     init(recipe: Recipe?) {
@@ -67,7 +66,6 @@ extension EditRecipeFeature: View {
                 }
                 .onChange(of: state.missingField) { _, newValue in
                     guard let newValue else { return }
-                    focusedField = newValue
                     scrollToMissingField(newValue, using: proxy)
                 }
             }
@@ -133,25 +131,34 @@ private extension EditRecipeFeature {
         withAnimation {
             proxy.scrollTo(field.scrollTargetID, anchor: .center)
         }
+        state.missingField = nil
     }
     
     func checkRequiredFields() -> Bool {
         guard state.image != nil else {
+            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Image").message)
+            state.floaterItem = item
             state.missingField = .image
             return false
         }
         
         guard state.title.isEmpty == false else {
+            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Title").message)
+            state.floaterItem = item
             state.missingField = .title
             return false
         }
         
         guard state.ingredients.isEmpty == false else {
+            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Ingredient").message)
+            state.floaterItem = item
             state.missingField = .ingredients
             return false
         }
         
         guard state.steps.isEmpty == false else {
+            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Step").message)
+            state.floaterItem = item
             state.missingField = .steps
             return false
         }
@@ -186,7 +193,7 @@ private extension EditRecipeFeature {
                 
                 router.dismiss()
             } catch {
-                state.floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
+                state.floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
             }
         }
         

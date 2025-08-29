@@ -38,7 +38,7 @@ extension SignUpFeature: ViewFeature {
         case .continueTapped:
             signUp()
         case .onNicknameChange(let nickname):
-            validateNickname(nickname)
+            withAnimation { validateNickname(nickname) }
         case .onFloaterItemChange(let item):
             floaterItem = item
         }
@@ -97,12 +97,14 @@ private extension SignUpFeature {
         
         let task = Task {
             do {
-                try await Task.sleep(for: .seconds(0.5))
+                try await Task.sleep(for: .seconds(0.8))
                 state.isLoading = true
                 defer { state.isLoading = false }
                 
                 state.updateTemporalNickname(nickname)
-                state.nicknameValidationState = await memberModel.validateNickname(nickname)
+                let nul = await memberModel.validateNickname(nickname)
+                print(nul)
+                state.nicknameValidationState = nul
             } catch {
                 
             }
@@ -123,7 +125,7 @@ private extension SignUpFeature {
                 guard Task.isCancelled == false else { return }
                 notify(.onNicknameChange(nickname: temporalNickname))
             } catch {
-                let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
+                let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
                 notify(.onFloaterItemChange(floaterItem))
             }
         }
@@ -135,7 +137,7 @@ private extension SignUpFeature {
         state.cancelTask(for: #function)
         
         guard state.nicknameFieldText.isEmpty == false else {
-            let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
+            let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
             return notify(.onFloaterItemChange(floaterItem))
         }
         
@@ -148,7 +150,7 @@ private extension SignUpFeature {
             do {
                 try await memberModel.register(nickname: submittedNickname)
             } catch {
-                let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted)
+                let floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
                 notify(.onFloaterItemChange(floaterItem))
             }
         }

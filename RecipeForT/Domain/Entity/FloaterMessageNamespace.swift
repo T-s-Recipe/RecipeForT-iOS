@@ -7,10 +7,20 @@
 
 import Foundation
 
-struct FloaterMessageNamespace {
-    static let unknownErrorOccurred = "Please try again in a moment."
-    static let authenticationNotCompleted = "Authentication not completed."
-    static let loggedOut = "You've been logged out."
+enum FloaterMessageNamespace {
+    case unknownErrorOccurred
+    case authenticationNotCompleted
+    case loggedOut
+    case accountCreated
+    case missingRequiredFields(which: String)
     
-    static let accountCreated = "Your account has been successfully created!"
+    var message: String {
+        switch self {
+        case .unknownErrorOccurred: "Please try again in a moment."
+        case .authenticationNotCompleted: "Authentication not completed."
+        case .loggedOut: "You've been logged out."
+        case .accountCreated: "Your account has been successfully created!"
+        case .missingRequiredFields(let which): "Missing required fields: \(which)."
+        }
+    }
 }
