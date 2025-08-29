@@ -10,29 +10,22 @@ import Foundation
 @MainActor @Observable
 final class RecipeGuideState: ViewState {
     private(set) var servings: Decimal?
-    private(set) var ingredients: [Ingredient]
-    private(set) var sources: [Ingredient]
-    private(set) var detailedSteps: [CookingStep]
+    private(set) var ingredients: [Ingredient] = []
+    private(set) var sources: [Ingredient] = []
+    private(set) var detailedSteps: [CookingStep] = []
+    var floaterItem: FloaterItem?
     
     private let maxServing: Decimal = 100
     private let minServing: Decimal = 1
-    private let originalServings: Decimal
-    private let originalIngredients: [Ingredient]
-    private let originalSources: [Ingredient]
+    private var originalServings: Decimal?
+    private var originalIngredients: [Ingredient]?
+    private var originalSources: [Ingredient]?
     
     var tasks: [String : Task<Void, Never>] = [:]
     
-    init(recipe: Recipe) {
-        self.servings = recipe.servingsCount
-        self.ingredients = recipe.ingredients
-        self.sources = recipe.sources
-        self.detailedSteps = recipe.detailedSteps
-        self.originalServings = recipe.servingsCount ?? 1
-        self.originalIngredients = recipe.ingredients
-        self.originalSources = recipe.sources
-    }
-    
     private func adjustQuantities() {
+        guard let originalServings = originalServings, let originalIngredients = originalIngredients, let originalSources = originalSources  else { return }
+        
         guard let servings = servings, servings >= minServing, servings <= maxServing else { return }
         let ratio = servings / originalServings
         
@@ -56,6 +49,16 @@ final class RecipeGuideState: ViewState {
 
 // MARK: - Interfaces
 extension RecipeGuideState {
+    func synchronize(_ recipe: Recipe) {
+        servings = recipe.servingsCount
+        ingredients = recipe.ingredients
+        sources = recipe.sources
+        detailedSteps = recipe.detailedSteps
+        originalServings = recipe.servingsCount ?? 1
+        originalIngredients = recipe.ingredients
+        originalSources = recipe.sources
+    }
+    
     func increaseServing() {
         guard let currentServings = servings, currentServings < maxServing else { return }
         servings = (currentServings + 0.5).rounded(to: 1)

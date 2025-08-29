@@ -29,11 +29,11 @@ final class Recipe: Identifiable, Equatable {
     /// 레시피에 대한 설명
     let description: String
     /// 재료 목록
-    let ingredients: [Ingredient]
+    var ingredients: [Ingredient]
     /// 소스 목록
-    let sources: [Ingredient]
+    var sources: [Ingredient]
     /// 조리과정 목록
-    let detailedSteps: [CookingStep]
+    var detailedSteps: [CookingStep]
     
     init(
         id: String = UUID().uuidString,

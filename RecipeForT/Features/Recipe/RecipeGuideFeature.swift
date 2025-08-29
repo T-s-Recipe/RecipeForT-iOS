@@ -10,25 +10,24 @@ import SwiftUI
 @MainActor
 struct RecipeGuideFeature {
     @Environment(\.router) private var router
-    @State private var state: RecipeGuideState
+    @Environment(\.recipeRepository) private var recipeRepository
+    @State private var state: RecipeGuideState = RecipeGuideState()
     
-    let recipe: Recipe
-    
-    init(recipe: Recipe) {
-        self.recipe = recipe
-        state = RecipeGuideState(recipe: recipe)
-    }
+    @Bindable var recipe: Recipe
 }
 
 // MARK: - ViewFeature Conformation
 extension RecipeGuideFeature: ViewFeature {
     enum UIEvent {
+        case task
         case increaseServing
         case decreaseServing
     }
     
     func notify(_ event: UIEvent) {
         switch event {
+        case .task:
+            fetchRecipeDetails()
         case .increaseServing:
             state.increaseServing()
         case .decreaseServing:
@@ -301,6 +300,34 @@ extension RecipeGuideFeature: View {
     
     private func cellBackgroundColor(for index: Int) -> Color {
         return index.isOdd ? .secondary.opacity(0.1) : .clear
+    }
+}
+
+// MARK: - Methods
+private extension RecipeGuideFeature {
+    func onAppear() {
+        state.synchronize(recipe)
+    }
+    
+    func fetchRecipeDetails() {
+        guard state.ingredients.isEmpty, state.sources.isEmpty, state.detailedSteps.isEmpty else { return }
+        
+        state.cancelTask(for: #function)
+        
+        let task = Task {
+            do {
+                let recipeDetails = try await recipeRepository.read(recipeID: recipe.id)
+                state.synchronize(recipeDetails)
+                recipe.ingredients = recipeDetails.ingredients
+                recipe.sources = recipeDetails.sources
+                recipe.detailedSteps = recipeDetails.detailedSteps
+            } catch {
+                let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred)
+                state.floaterItem = item
+            }
+        }
+        
+        state.storeTask(for: #function, task: task)
     }
 }
 

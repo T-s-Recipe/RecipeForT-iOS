@@ -71,4 +71,21 @@ struct RecipeResponseDTO: Decodable {
         case description = "memo"
         case sources = "sourceIngredients"
     }
+    
+    func toEntity() -> Recipe {
+        .init(
+            id: id,
+            authorID: authorID,
+            authorNickname: authorNickname,
+            name: title,
+            imageURL: imageURL,
+            servingsCount: servings,
+            cost: cost,
+            cookingTime: cookingTime,
+            description: description,
+            ingredients: basicIngredients.map { $0.toEntity() },
+            sources: sources.map { $0.toEntity() },
+            detailedSteps: steps.map { $0.toEntity() }
+        )
+    }
 }

@@ -21,6 +21,7 @@ protocol RecipeRepositoryProtocol {
         detailedSteps: [CookingStep]
     ) async throws -> Recipe
     func read(pageID: String?, limit: Int32) async throws -> RecipePage
+    func read(recipeID: String) async throws -> Recipe
     func update(_ recipe: Recipe) async throws
     func delete(_ id: UInt64) async throws
     
@@ -111,6 +112,20 @@ extension RecipeRepository: RecipeRepositoryProtocol {
             throw RecipeRepositoryError.decodingFailed
         } catch let error as NetworkServiceError {
             throw RecipeRepositoryError.networkError(error)
+        }
+    }
+    
+    func read(recipeID: String) async throws -> Recipe {
+        let endpoint = Endpoint.fetchRecipeDetail(recipeID: recipeID)
+        
+        do {
+            let response = try await networkService.request(endpoint)
+            let responseDTO = try decoder.decode(RecipeResponseDTO.self, from: response.data)
+            return responseDTO.toEntity()
+        } catch let error as NetworkServiceError {
+            throw RecipeRepositoryError.networkError(error)
+        } catch is DecodingError {
+            throw RecipeRepositoryError.decodingFailed
         }
     }
     
