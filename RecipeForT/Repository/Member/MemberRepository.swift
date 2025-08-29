@@ -103,6 +103,8 @@ extension MemberRepository: MemberRepositoryProtocol {
     }
     
     func fetchMember() async throws -> Member {
+        guard let _ = try? tokenStorage.fetch() else { throw MemberRepositoryError.memberNotFound }
+        
         let endpoint = Endpoint.fetchMemberInfo
         
         do {

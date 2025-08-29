@@ -32,8 +32,13 @@ final class MemberModel {
 extension MemberModel {
     func attemptAutoLogin() {
         Task {
-            guard let member = try? await memberRepository.fetchMember() else { return }
-            authenticationState = .loggedIn(member: member)
+            do {
+                let member = try await memberRepository.fetchMember()
+                authenticationState = .loggedIn(member: member)
+            } catch {
+                authenticationState = .loggedOut
+                await memberRepository.logout()
+            }
         }
     }
     
