@@ -153,24 +153,20 @@ private extension RecipeListFeature {
     func loadRecipes() {
         state.cancelTask(for: #function)
         
-        if state.isRefreshNeeded { state.flush() }
-        
         let task = Task {
             state.isErrorOccurred = false
             state.isLoading = true
+            defer { state.isLoading = false }
             
             do {
                 let page = try await recipeRepository.read(pageID: state.nextPageID, limit: state.fetchLimit)
                 
-                guard Task.isCancelled == false else { return state.isLoading = false }
+                guard Task.isCancelled == false else { return }
                 
-                state.recipes += page.recipes
+                state.recipes = page.recipes
             } catch {
                 state.isErrorOccurred = true
             }
-            
-            state.isLoading = false
-            state.isRefreshNeeded = false
         }
         
         state.storeTask(for: #function, task: task)
@@ -185,19 +181,18 @@ private extension RecipeListFeature {
         
         let task = Task {
             state.isLoading = true
+            defer { state.isLoading = false }
             
             do {
                 let page = try await recipeRepository.read(pageID: nextPageID, limit: state.fetchLimit)
                 
-                guard Task.isCancelled == false else { return state.isLoading = false }
+                guard Task.isCancelled == false else { return }
                 
                 state.recipes += page.recipes
                 state.nextPageID = page.nextPageID
             } catch {
                 state.floaterItem = .init(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
             }
-            
-            state.isLoading = false
         }
         
         state.storeTask(for: #function, task: task)

@@ -14,7 +14,6 @@ final class RecipeListState: ViewState {
     var isErrorOccurred: Bool = false
     var isLoading: Bool = false
     var nextPageID: String?
-    var isRefreshNeeded: Bool = true
     let fetchLimit: Int32 = 16
     
     var tasks: [String: Task<Void, Never>] = [:]
@@ -23,7 +22,6 @@ final class RecipeListState: ViewState {
 // MARK: - Interfaces
 extension RecipeListState {
     func flush() {
-        recipes.removeAll()
         nextPageID = nil
     }
 }
