@@ -108,8 +108,9 @@ extension Endpoint: TargetType {
         case .uploadRecipe(let dto):
             return .requestJSONEncodable(dto)
         case .uploadRecipeImage(let item):
-            var formData = MultipartFormData(provider: .data(item.data), name: "imageFile", fileName: item.filename, mimeType: item.mimeType)
-            return .uploadMultipart([formData])
+            var formDatas = [MultipartFormData]()
+            formDatas.append(.init(provider: .data(item.data), name: "imageFile", fileName: item.filename, mimeType: item.mimeType))
+            return .uploadMultipart(formDatas)
         case .fetchRecipeDetail:
             return .requestPlain
         case .fetchRecipeList(let nextPageID, let limit):
