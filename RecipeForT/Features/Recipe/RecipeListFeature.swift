@@ -27,14 +27,14 @@ struct RecipeListFeature {
 // MARK: - ViewFeature Conformation
 extension RecipeListFeature: ViewFeature {
     enum UIEvent {
-        case needToMoreRecipes(pageID: String)
+        case needToMoreRecipes(recipeID: String, pageID: String)
         case refresh
     }
     
     func notify(_ event: UIEvent) {
         switch event {
-        case .needToMoreRecipes(let pageID):
-            loadMoreRecipes(pageID)
+        case .needToMoreRecipes(let recipeID, let pageID):
+            loadMoreRecipes(recipeID: recipeID, nextPageID: pageID)
             
         case .refresh:
             loadRecipes()
@@ -52,7 +52,7 @@ extension RecipeListFeature: View {
                 LazyVGrid(columns: column, spacing: 8) {
                     ForEach(state.recipes) { recipe in
                         recipeCell(recipe)
-                            .onAppear { notify(.needToMoreRecipes(pageID: recipe.id)) }
+                            .onAppear { notify(.needToMoreRecipes(recipeID: recipe.id, pageID: recipe.id)) }
                     }
                 }
                 .padding(.horizontal)
@@ -157,6 +157,7 @@ private extension RecipeListFeature {
             state.isErrorOccurred = false
             state.isLoading = true
             defer { state.isLoading = false }
+            state.nextPageID = nil
             
             do {
                 let page = try await recipeRepository.read(pageID: state.nextPageID, limit: state.fetchLimit)
@@ -164,6 +165,7 @@ private extension RecipeListFeature {
                 guard Task.isCancelled == false else { return }
                 
                 state.recipes = page.recipes
+                state.nextPageID = page.nextPageID
             } catch {
                 state.isErrorOccurred = true
             }
@@ -172,9 +174,9 @@ private extension RecipeListFeature {
         state.storeTask(for: #function, task: task)
     }
     
-    func loadMoreRecipes(_ nextPageID: String) {
+    func loadMoreRecipes(recipeID: String, nextPageID: String) {
         guard state.recipes.isEmpty == false,
-              state.recipes.last?.id == nextPageID
+              state.recipes.last?.id == recipeID
         else { return }
         
         state.cancelTask(for: #function)
