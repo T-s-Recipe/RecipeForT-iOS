@@ -17,7 +17,7 @@ enum Endpoint {
     // MARK: - Member
     // case fetchMemberInfo(id: String?, providerID: String?, ci: String?)                                      // 회원정보 단건 조회 (Deprecated)
     case register(SignUpRequestDTO)                                                                             // 회원가입
-    case unregister(id: String)                                                                                 // 회원탈퇴
+    case unregister                                                                                             // 회원탈퇴
     case updateMemberInfo(UpdateMemberRequestDTO)                                                               // 회원정보 수정
     case fetchRandomNickname                                                                                    // 랜덤 닉네임 조회
     case checkNicknameDuplication(nickname: String)                                                             // 닉네임 중복 여부 조회
@@ -33,7 +33,7 @@ enum Endpoint {
 extension Endpoint {
     var usingToken: Bool {
         switch self {
-        case .fetchMemberInfo, .uploadRecipe, .uploadRecipeImage, .checkNicknameDuplication:
+        case .fetchMemberInfo, .uploadRecipe, .uploadRecipeImage, .checkNicknameDuplication, .unregister:
             true
         default:
             false
@@ -63,7 +63,7 @@ extension Endpoint: TargetType {
         case .register: "/members/"
         case .fetchRandomNickname: "/members/nickname"
         case .updateMemberInfo: "/members/"
-        case .unregister(let id): "/members/\(id)"
+        case .unregister: "/members"
         case .checkNicknameDuplication: "/members/nickname/check"
             
         case .uploadRecipe: "/recipes"

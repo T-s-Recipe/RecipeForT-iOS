@@ -15,6 +15,7 @@ protocol MemberRepositoryProtocol {
     func logout() async
     func fetchRandomNickname() async throws -> String
     func isNicknameDuplicated(nickname: String) async throws -> Bool
+    func deleteMember() async throws
 }
 
 enum MemberRepositoryError: Error {
@@ -156,6 +157,21 @@ extension MemberRepository: MemberRepositoryProtocol {
             throw MemberRepositoryError.networkError(error)
         } catch {
             throw MemberRepositoryError.decodingFailed
+        }
+    }
+    
+    func deleteMember() async throws {
+        let endpoint = Endpoint.unregister
+        
+        do {
+            _ = try await networkService.request(endpoint)
+            UserDefaults.standard.removeObject(forKey: AppStorageKey.userID)
+            authenticationState = .loggedOut
+            try tokenStorage.delete()
+        } catch let error as NetworkServiceError {
+            throw MemberRepositoryError.networkError(error)
+        } catch {
+            throw MemberRepositoryError.storageError(error)
         }
     }
 }

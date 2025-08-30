@@ -73,6 +73,17 @@ extension MemberModel {
         }
     }
     
+    func unregister() async throws {
+        guard case .loggedIn(let member) = authenticationState else { return }
+        
+        do {
+            try await memberRepository.deleteMember()
+            authenticationState = .loggedOut
+        } catch {
+            throw error
+        }
+    }
+    
     func fetchRandomNickname() async throws -> String {
         try await memberRepository.fetchRandomNickname()
     }

@@ -11,6 +11,7 @@ import Foundation
 final class PreferenceState: ViewState {
     var inquiries: [Inquiry] = []
     var announcements: [Announcement] = []
+    var floaterItem: FloaterItem?
     
     var tasks: [String: Task<Void, Never>] = [:]
 }

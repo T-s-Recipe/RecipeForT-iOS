@@ -23,12 +23,16 @@ struct PreferenceFeature {
 extension PreferenceFeature: ViewFeature {
     enum UIEvent {
         case task
+        case deleteAccountButtonTapped
+        
     }
     
     func notify(_ event: UIEvent) {
         switch event {
         case .task:
             task()
+        case .deleteAccountButtonTapped:
+            deleteAccount()
         }
     }
 }
@@ -117,6 +121,21 @@ extension PreferenceFeature: View {
 private extension PreferenceFeature {
     func task() {
         // TODO: 공지사항, Q&A 가져오는 로직 추가
+    }
+    
+    func deleteAccount() {
+        state.cancelTask(for: #function)
+        
+        let task = Task {
+            do {
+                try await memberModel.unregister()
+            } catch {
+                let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
+                state.floaterItem = item
+            }
+        }
+        
+        state.storeTask(for: #function, task: task)
     }
 }
 
