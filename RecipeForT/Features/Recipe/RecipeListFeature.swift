@@ -27,15 +27,14 @@ struct RecipeListFeature {
 // MARK: - ViewFeature Conformation
 extension RecipeListFeature: ViewFeature {
     enum UIEvent {
-        case needToMoreRecipes(recipeID: String, pageID: String)
+        case needToMoreRecipes(recipeID: String)
         case refresh
     }
     
     func notify(_ event: UIEvent) {
         switch event {
-        case .needToMoreRecipes(let recipeID, let pageID):
-            loadMoreRecipes(recipeID: recipeID, nextPageID: pageID)
-            
+        case .needToMoreRecipes(let recipeID):
+            loadMoreRecipes(recipeID: recipeID)
         case .refresh:
             loadRecipes()
         }
@@ -52,7 +51,7 @@ extension RecipeListFeature: View {
                 LazyVGrid(columns: column, spacing: 8) {
                     ForEach(state.recipes) { recipe in
                         recipeCell(recipe)
-                            .onAppear { notify(.needToMoreRecipes(recipeID: recipe.id, pageID: recipe.id)) }
+                            .onAppear { notify(.needToMoreRecipes(recipeID: recipe.id)) }
                     }
                 }
                 .padding(.horizontal)
@@ -61,7 +60,11 @@ extension RecipeListFeature: View {
                     ProgressView()
                 }
             }
-            .task { notify(.refresh) }
+            .onAppear {
+                guard state.hasInitiallyLoaded == false else { return }
+                notify(.refresh)
+                state.hasInitiallyLoaded = true
+            }
             .refreshable { notify(.refresh) }
             .onChange(of: state.floaterItem) { _, newValue in
                 guard let newValue else { return }
@@ -152,12 +155,12 @@ extension RecipeListFeature: View {
 private extension RecipeListFeature {
     func loadRecipes() {
         state.cancelTask(for: #function)
+        state.flush()
         
         let task = Task {
             state.isErrorOccurred = false
             state.isLoading = true
             defer { state.isLoading = false }
-            state.nextPageID = nil
             
             do {
                 let page = try await recipeRepository.read(pageID: state.nextPageID, limit: state.fetchLimit)
@@ -174,9 +177,11 @@ private extension RecipeListFeature {
         state.storeTask(for: #function, task: task)
     }
     
-    func loadMoreRecipes(recipeID: String, nextPageID: String) {
+    func loadMoreRecipes(recipeID: String) {
         guard state.recipes.isEmpty == false,
-              state.recipes.last?.id == recipeID
+              state.fetchLimit <= state.recipes.count,
+              state.recipes.last?.id == recipeID,
+              let nextPageID = state.nextPageID
         else { return }
         
         state.cancelTask(for: #function)

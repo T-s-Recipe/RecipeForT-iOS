@@ -13,6 +13,7 @@ final class RecipeListState: ViewState {
     var floaterItem: FloaterItem?
     var isErrorOccurred: Bool = false
     var isLoading: Bool = false
+    var hasInitiallyLoaded: Bool = false
     var nextPageID: String?
     let fetchLimit: Int32 = 16
     
