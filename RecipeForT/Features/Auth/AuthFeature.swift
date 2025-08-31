@@ -67,6 +67,10 @@ extension AuthFeature: View {
             Spacer()
         }
         .floater($floaterItem)
+        .onChange(of: memberModel.isLoggedIn) { _, isLoggedIn in
+            guard isLoggedIn else { return }
+            router.dismiss()
+        }
     }
 }
 

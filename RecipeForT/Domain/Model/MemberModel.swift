@@ -74,7 +74,7 @@ extension MemberModel {
     }
     
     func unregister() async throws {
-        guard case .loggedIn(let member) = authenticationState else { return }
+        guard case .loggedIn = authenticationState else { return }
         
         do {
             try await memberRepository.deleteMember()
@@ -93,7 +93,8 @@ extension MemberModel {
         guard nickname.count <= Constants.maximumNicknameLength else { return .limitExceeded }
         
         do {
-            guard try await memberRepository.isNicknameDuplicated(nickname: nickname) else { return .duplicated }
+            let isDuplicated = try await memberRepository.isNicknameDuplicated(nickname: nickname)
+            guard isDuplicated == false else { return .duplicated }
             return .valid
         } catch {
             return .emptyNickname

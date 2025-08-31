@@ -33,7 +33,7 @@ enum Endpoint {
 extension Endpoint {
     var usingToken: Bool {
         switch self {
-        case .fetchMemberInfo, .uploadRecipe, .uploadRecipeImage, .checkNicknameDuplication, .unregister:
+        case .fetchMemberInfo, .uploadRecipe, .uploadRecipeImage, .unregister:
             true
         default:
             false
@@ -109,7 +109,7 @@ extension Endpoint: TargetType {
             return .requestJSONEncodable(dto)
         case .uploadRecipeImage(let item):
             var formDatas = [MultipartFormData]()
-            formDatas.append(.init(provider: .data(item.data), name: "imageFile", fileName: item.filename, mimeType: item.mimeType))
+            formDatas.append(.init(provider: .data(item.data), name: "imageFile"))
             return .uploadMultipart(formDatas)
         case .fetchRecipeDetail:
             return .requestPlain
@@ -122,10 +122,7 @@ extension Endpoint: TargetType {
     }
     
     var headers: [String : String]? {
-        switch self {
-        case .signIn: ["App-Platform": "ios"]
-        default: .none
-        }
+        ["App-Platform": "ios"]
     }
     
     var validationType: ValidationType {

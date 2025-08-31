@@ -103,7 +103,8 @@ private extension SignUpFeature {
                 defer { state.isLoading = false }
                 
                 state.updateTemporalNickname(nickname)
-                state.nicknameValidationState = await memberModel.validateNickname(nickname)
+                let validationState = await memberModel.validateNickname(nickname)
+                state.updateNicknameValidationState(validationState)
             } catch {
                 
             }
