@@ -16,11 +16,13 @@ extension RecipeIngredientsInfoFeature: ViewFeature {
     enum UIEvent {
         case addIngredient
         case removeIngredient(id: UUID)
+        case clearIngredient(id: UUID)
         case moveIngredientUp(id: UUID)
         case moveIngredientDown(id: UUID)
         case onIngredientChanged(Ingredient)
         case addSource
         case removeSource(id: UUID)
+        case clearSource(id: UUID)
         case moveSourceUp(id: UUID)
         case moveSourceDown(id: UUID)
         case onSourceChanged(Ingredient)
@@ -32,6 +34,8 @@ extension RecipeIngredientsInfoFeature: ViewFeature {
             state.ingredients.append(.init(name: "", units: .init()))
         case .removeIngredient(let id):
             removeIngredient(id: id)
+        case .clearIngredient(let id):
+            clearIngredient(id: id)
         case .moveIngredientUp(let id):
             onIngredientMoveUp(id: id)
         case .moveIngredientDown(let id):
@@ -42,6 +46,8 @@ extension RecipeIngredientsInfoFeature: ViewFeature {
             state.sources.append(.init(name: "", units: .init()))
         case .removeSource(let id):
             removeSource(id: id)
+        case .clearSource(let id):
+            clearSource(id: id)
         case .moveSourceUp(let id):
             onSourceMoveUp(id: id)
         case .moveSourceDown(let id):
@@ -66,7 +72,11 @@ extension RecipeIngredientsInfoFeature: View {
                         ForEach($state.ingredients) { $ingredient in
                             VStack {
                                 IngredientRow(ingredient: $ingredient) {
-                                    notify(.removeIngredient(id: ingredient.id))
+                                    if ingredient.name.isEmpty {
+                                        notify(.removeIngredient(id: ingredient.id))
+                                    } else {
+                                        notify(.clearIngredient(id: ingredient.id))
+                                    }
                                 } onMoveUp: {
                                     notify(.moveIngredientUp(id: ingredient.id))
                                 } onMoveDown: {
@@ -115,7 +125,11 @@ extension RecipeIngredientsInfoFeature: View {
                         ForEach($state.sources) { $source in
                             VStack {
                                 IngredientRow(ingredient: $source) {
-                                    notify(.removeSource(id: source.id))
+                                    if source.name.isEmpty {
+                                        notify(.removeSource(id: source.id))
+                                    } else {
+                                        notify(.clearSource(id: source.id))
+                                    }
                                 } onMoveUp: {
                                     notify(.moveSourceUp(id: source.id))
                                 } onMoveDown: {
@@ -163,6 +177,19 @@ extension RecipeIngredientsInfoFeature: View {
         state.ingredients.removeAll(where: { $0.id == id })
     }
     
+    private func clearIngredient(id: UUID) {
+        if let index = state.ingredients.firstIndex(where: { $0.id == id }) {
+            state.ingredients[index].name.removeAll()
+            state.ingredients[index].units.cup = nil
+            state.ingredients[index].units.gram = nil
+            state.ingredients[index].units.milliliters = nil
+            state.ingredients[index].units.ounce = nil
+            state.ingredients[index].units.quantity = nil
+            state.ingredients[index].units.tablespoon = nil
+            state.ingredients[index].units.teaspoon = nil
+        }
+    }
+    
     private func onIngredientMoveUp(id: UUID) {
         if let index = state.ingredients.firstIndex(where: { $0.id == id }),
            index > 0 {
@@ -184,6 +211,19 @@ extension RecipeIngredientsInfoFeature: View {
     
     private func removeSource(id: UUID) {
         state.sources.removeAll { $0.id == id }
+    }
+    
+    private func clearSource(id: UUID) {
+        if let index = state.sources.firstIndex(where: { $0.id == id }) {
+            state.sources[index].name.removeAll()
+            state.sources[index].units.cup = nil
+            state.sources[index].units.gram = nil
+            state.sources[index].units.milliliters = nil
+            state.sources[index].units.ounce = nil
+            state.sources[index].units.quantity = nil
+            state.sources[index].units.tablespoon = nil
+            state.sources[index].units.teaspoon = nil
+        }
     }
     
     private func onSourceMoveUp(id: UUID) {
