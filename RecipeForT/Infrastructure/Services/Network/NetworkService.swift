@@ -8,8 +8,8 @@
 import Foundation
 import Moya
 
-protocol NetworkServiceProtocol {
-    func request<T>(_ endpoint: T) async throws -> Response where T: TargetType
+protocol NetworkServiceProtocol: Sendable {
+    func request<T>(_ endpoint: T) async throws -> NetworkResponse where T: TargetType
 }
 
 enum NetworkServiceError: Error {
@@ -24,7 +24,12 @@ enum NetworkServiceError: Error {
     case timeout                          // 요청 시간 초과
 }
 
-final class NetworkService {
+struct NetworkResponse: Sendable {
+    let statusCode: Int
+    let data: Data
+}
+
+final class NetworkService: @unchecked Sendable {
     private let provider: MoyaProvider<MultiTarget>
     
     init(tokenStorage: TokenStorageProtocol) {
@@ -76,15 +81,16 @@ final class NetworkService {
 
 // MARK: - NetworkServiceProtocol Conformation
 extension NetworkService: NetworkServiceProtocol {
-    func request<T>(_ endpoint: T) async throws -> Response where T: TargetType {
+    func request<T>(_ endpoint: T) async throws -> NetworkResponse where T: TargetType {
         do {
             print("[NetworkService] - Requesting: \(String(describing: endpoint))")
             let response = try await provider.asyncRequest(MultiTarget(endpoint))
-            if let responseString = try? response.mapString() { print("\n\(responseString)") }
+            
+            if let responseString = String(data: response.data, encoding: .utf8) { print("\n\(responseString)") }
             return response
-        } catch let error as MoyaError {
-            let mappedError = mapError(error)
-            throw mappedError
+        } catch let error as NetworkServiceError {
+            print("Network service error: \(error)")
+            throw error
         } catch {
             print("Unexpected error: \(error.localizedDescription)")
             throw NetworkServiceError.networkFailure
@@ -94,10 +100,38 @@ extension NetworkService: NetworkServiceProtocol {
 
 // MARK: - MoyaProvider + HelperMethods
 extension MoyaProvider {
-    func asyncRequest(_ target: Target) async throws -> Response {
-        try await withCheckedThrowingContinuation { continuation in
+    func asyncRequest(_ target: Target) async throws -> NetworkResponse {
+        func mapToNetworkError(_ error: MoyaError) -> NetworkServiceError {
+            switch error {
+            case .statusCode(let response):
+                switch response.statusCode {
+                case 401: return .unauthorized
+                case 404: return .notFound
+                case 500..<600: return .serverError
+                default: return .invalidResponse
+                }
+            case .underlying(_, _):
+                return .networkFailure
+            case .objectMapping, .imageMapping, .jsonMapping, .stringMapping:
+                return .decodingFailed
+            case .encodableMapping, .parameterEncoding:
+                return .encodingFailed
+            case .requestMapping:
+                return .requestMapping
+            }
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
             request(target) { result in
-                continuation.resume(with: result)
+                switch result {
+                case .success(let response):
+                    let networkResponse = NetworkResponse(statusCode: response.statusCode, data: response.data)
+                    continuation.resume(returning: networkResponse)
+                    
+                case .failure(let moyaError):
+                    let networkError = mapToNetworkError(moyaError)
+                    continuation.resume(throwing: networkError)
+                }
             }
         }
     }

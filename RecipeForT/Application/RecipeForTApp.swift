@@ -6,30 +6,19 @@
 //
 
 import SwiftUI
-import Swinject
 import GoogleSignIn
+import ComposableArchitecture
 
 @main
 struct RecipeForTApp: App {
-    private let resolver: Resolver = {
-        let assembler = Assembler([
-            DomainAssembly(),
-            RepositoryAssembly(),
-            InfrastructureAssembly()
-        ])
-        return assembler.resolver
-    }()
+    @State var store: StoreOf<RootFeature> = .init(initialState: .init()) { RootFeature() }
     
     var body: some Scene {
         WindowGroup {
-            RootFeature()
+            RootView(store: store)
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }
-                .environment(\.router, Router())
-                .environment(resolver.resolve(MemberModel.self)!)
-                .environment(\.recipeRepository, resolver.resolve(RecipeRepositoryProtocol.self)!)
-                .environment(\.supportRepository, resolver.resolve(SupportRepositoryProtocol.self)!)
                 .preferredColorScheme(.light)
         }
     }

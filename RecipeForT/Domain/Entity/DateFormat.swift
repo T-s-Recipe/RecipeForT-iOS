@@ -104,8 +104,8 @@ extension DateFormat {
      * DateFormatter를 매번 생성하지 않고 재사용 하려는 목적으로 사용
      
      */
-    static func cachedFormatter(dateFormat: String) -> DateFormatter {
-        dateFormatterCached.cachedFormatter(for: dateFormat)
+    static func cachedFormatter(dateFormat: String) async -> DateFormatter {
+        await dateFormatterCached.cachedFormatter(for: dateFormat)
     }
     
     /**
@@ -114,8 +114,8 @@ extension DateFormat {
      * DateFormatter를 매번 생성하지 않고 재사용 하려는 목적으로 사용
      
      */
-    static func cachedFormatter(dateFormat: DateFormat) -> DateFormatter {
-        dateFormatterCached.cachedFormatter(for: dateFormat.rawValue)
+    static func cachedFormatter(dateFormat: DateFormat) async -> DateFormatter {
+        await dateFormatterCached.cachedFormatter(for: dateFormat.rawValue)
     }
     
     static func toDate(iso8601String: String) -> Date? {
@@ -125,7 +125,7 @@ extension DateFormat {
     }
 }
 
-final class DateFormatterCached {
+final actor DateFormatterCached {
     private var cachedFormatters = [String: DateFormatter]()
     
     func cachedFormatter(for dateFormat: String) -> DateFormatter {

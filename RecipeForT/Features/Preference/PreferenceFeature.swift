@@ -6,50 +6,151 @@
 //
 
 import SwiftUI
+import ComposableArchitecture
 
-@MainActor
+@Reducer
 struct PreferenceFeature {
-    struct Constants {
-        static let providerGuidence = "Signed up with"
-    }
-    
-    @Environment(\.router) private var router
-    @Environment(MemberModel.self) private var memberModel
-    
-    @State private var state = PreferenceState()
-}
-
-// MARK: - ViewFeature Conformation
-extension PreferenceFeature: ViewFeature {
-    enum UIEvent {
-        case task
-        case deleteAccountButtonTapped
+    @ObservableState
+    struct State: Equatable {
+        var authState: AuthenticationState
+        var notices: AnnouncementContentPreviewListFeature.State
+        var inquiries: AnnouncementContentPreviewListFeature.State
+        @Presents var destination: Destination.State?
         
-    }
-    
-    func notify(_ event: UIEvent) {
-        switch event {
-        case .task:
-            task()
-        case .deleteAccountButtonTapped:
-            deleteAccount()
+        init(authState: AuthenticationState) {
+            self.authState = authState
+            notices = .init(type: .notice, contents: [])
+            inquiries = .init(type: .QNA, contents: [])
         }
     }
+    
+    enum Action {
+        @CasePathable
+        enum ViewAction {
+            case task
+            case deleteAccountButtonTapped
+        }
+        
+        @CasePathable
+        enum InternalAction {
+            case announcementsResponse(Result<[AnnouncementItem], Error>)
+            case deleteAccountResponse(Result<Void, Error>)
+        }
+        
+        @CasePathable
+        enum Delegate {
+            case presentNotices
+            case presentInquiries
+        }
+        
+        case view(ViewAction)
+        case `internal`(InternalAction)
+        case delegate(Delegate)
+        
+        case notices(AnnouncementContentPreviewListFeature.Action)
+        case inquiries(AnnouncementContentPreviewListFeature.Action)
+        case destination(PresentationAction<Destination.Action>)
+    }
+    
+    @Reducer
+    struct Destination {
+        @ObservableState
+        enum State: Equatable {
+            case confirmDeletion(AlertState<Action.ConfirmDeletion>)
+        }
+        
+        enum Action {
+            @CasePathable
+            enum ConfirmDeletion {
+                case confirmButtonTapped
+                case cancel
+            }
+            
+            case confirmDeletion(ConfirmDeletion)
+        }
+        
+        var body: some Reducer<State, Action> {
+            Reduce { _, _ in .none }
+        }
+    }
+    
+    @Dependency(\.authClient) var authClient
+    
+    var body: some Reducer<State, Action> {
+        Scope(state: \.notices, action: \.notices) { AnnouncementContentPreviewListFeature() }
+        Scope(state: \.inquiries, action: \.inquiries) { AnnouncementContentPreviewListFeature() }
+        
+        Reduce { state, action in
+            switch action {
+            case .view(.task):
+                // TODO: Data Fetching
+                return .none
+                
+            case .view(.deleteAccountButtonTapped):
+                state.destination = .confirmDeletion(.deleteAccount)
+                return .none
+                
+            case .notices(.delegate(.seeMoreTapped)):
+                return .send(.delegate(.presentNotices))
+                
+            case .inquiries(.delegate(.seeMoreTapped)):
+                return .send(.delegate(.presentInquiries))
+                
+            case .destination(.presented(.confirmDeletion(.confirmButtonTapped))):
+                return .run { send in
+                    do {
+                        try await authClient.unregister()
+                        await send(.internal(.deleteAccountResponse(.success(()))))
+                    } catch {
+                        await send(.internal(.deleteAccountResponse(.failure(error))))
+                    }
+                }
+                
+            case .internal(.deleteAccountResponse(.success)):
+                return .none
+                
+            case .internal(.deleteAccountResponse(.failure)):
+                // TODO: Floater 표시
+                return .none
+                
+            case .notices, .inquiries, .destination, .delegate, .internal:
+                return .none
+            }
+        }
+        .ifLet(\.$destination, action: \.destination) { Destination() }
+    }
 }
 
-// MARK: - View Conformation
-extension PreferenceFeature: View {
+extension AlertState where Action == PreferenceFeature.Destination.Action.ConfirmDeletion {
+    static let deleteAccount = Self {
+        TextState("Delete Account")
+    } actions: {
+        ButtonState(role: .destructive, action: .confirmButtonTapped) {
+            TextState("Confirm")
+        }
+        
+        ButtonState(role: .cancel, action: .cancel) {
+            TextState("Cancel")
+        }
+    } message: {
+        TextState("Are you sure you want to delete your account? This action cannot be undone.")
+    }
+}
+
+struct PreferenceView: View {
+    let store: StoreOf<PreferenceFeature>
+    
     var body: some View {
         ScrollView(.vertical) {
-            accountSection
+            accountSection()
             
             thickDivider
             
-            AnnouncementContentPreviewListFeature(type: .notice, contents: state.announcements)
+            AnnouncementContentPreviewListView(store: store.scope(state: \.notices, action: \.notices))
             
             thickDivider
             
-            AnnouncementContentPreviewListFeature(type: .QNA, contents: state.inquiries)
+            AnnouncementContentPreviewListView(store: store.scope(state: \.inquiries, action: \.inquiries))
             
             thickDivider
             
@@ -74,7 +175,7 @@ extension PreferenceFeature: View {
                     Text("|")
                     
                     Button {
-                        // TODO: 회원탈퇴
+                        store.send(.view(.deleteAccountButtonTapped))
                     } label: {
                         Text("Delete Account")
                     }
@@ -84,7 +185,7 @@ extension PreferenceFeature: View {
             }
         }
         .task {
-            notify(.task)
+            await store.send(.view(.task)).finish()
         }
     }
     
@@ -94,53 +195,36 @@ extension PreferenceFeature: View {
             .foregroundStyle(.gray.opacity(0.3))
     }
     
-    private var accountSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(memberModel.user?.nickname ?? "Please Sign in")
-                .font(.title2.bold())
-                .padding(.vertical, 8)
-            
-            Text(Constants.providerGuidence)
-            
-            HStack {
-                Text(memberModel.user?.provider.identifier ?? "Unknown Provider")
-                Spacer()
+    @ViewBuilder private func accountSection() -> some View {
+        if case .loggedIn(let member) = store.authState {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(member.nickname)
+                    .font(.title2.bold())
+                    .padding(.vertical, 8)
+                
+                Text("Signed up with")
+                
+                HStack {
+                    Text(member.provider.identifier)
+                    Spacer()
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(.gray.opacity(0.1))
+                        .strokeBorder(.gray)
+                )
             }
             .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(.gray.opacity(0.1))
-                    .strokeBorder(.gray)
-            )
+        } else {
+            Text("Please Sign in")
+                .padding()
         }
-        .padding()
     }
 }
 
-// MARK: - Methods
-private extension PreferenceFeature {
-    func task() {
-        // TODO: 공지사항, Q&A 가져오는 로직 추가
-    }
-    
-    func deleteAccount() {
-        state.cancelTask(for: #function)
-        
-        let task = Task {
-            do {
-                try await memberModel.unregister()
-            } catch {
-                let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
-                state.floaterItem = item
-            }
-        }
-        
-        state.storeTask(for: #function, task: task)
-    }
-}
-
-// MARK: - Subviews
-struct AnnouncementContentPreviewListFeature<Content: AnnouncementContent> {
+@Reducer
+struct AnnouncementContentPreviewListFeature {
     enum SectionType {
         case notice, QNA
         
@@ -161,57 +245,67 @@ struct AnnouncementContentPreviewListFeature<Content: AnnouncementContent> {
         var seeMoreButtonLabel: String { "See more" }
     }
     
-    @Environment(\.router) private var router
-    
-    let type: SectionType
-    let contents: [Content]
-    
-    init(type: SectionType, contents: [Content]) {
-        self.type = type
-        self.contents = contents
-    }
-}
-
-// MARK: - ViewFeature Conformation
-extension AnnouncementContentPreviewListFeature: ViewFeature {
-    enum UIEvent {
-        case seeMoreButtonTapped
+    @ObservableState
+    struct State: Equatable {
+        let type: SectionType
+        var contents: [AnnouncementItem]
     }
     
-    func notify(_ event: UIEvent) {
-        switch event {
-        case .seeMoreButtonTapped:
-            router.route(to: .loginView)
+    enum Action {
+        @CasePathable
+        enum ViewAction {
+            case seeMoreButtonTapped
+        }
+        
+        @CasePathable
+        enum Delegate {
+            case seeMoreTapped(SectionType)
+        }
+        
+        case view(ViewAction)
+        case delegate(Delegate)
+    }
+    
+    var body: some Reducer<State, Action> {
+        Reduce { state, action in
+            switch action {
+            case .view(.seeMoreButtonTapped):
+                return .send(.delegate(.seeMoreTapped(state.type)))
+                
+            case .delegate:
+                return .none
+            }
         }
     }
 }
 
-// MARK: - View Conformation
-extension AnnouncementContentPreviewListFeature: View {
+struct AnnouncementContentPreviewListView: View {
+    let store: StoreOf<AnnouncementContentPreviewListFeature>
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(type.title)
+            Text(store.type.title)
                 .font(.headline.bold())
             
-            if contents.isEmpty {
-                Text(type.emptyText)
+            if store.contents.isEmpty {
+                Text(store.type.emptyText)
                     .frame(maxWidth: .infinity)
                     .frame(height: 100)
             } else {
                 LazyVStack {
-                    ForEach(contents) { content in
+                    ForEach(store.contents) { content in
                         cell(content)
                         
-                        if content.id != contents.last?.id {
+                        if content.id != store.contents.last?.id {
                             Divider()
                         }
                     }
                     
-                    if contents.count > 3 {
+                    if store.contents.count > 3 {
                         Button {
-                            notify(.seeMoreButtonTapped)
+                            store.send(.view(.seeMoreButtonTapped))
                         } label: {
-                            Text(type.seeMoreButtonLabel)
+                            Text(store.type.seeMoreButtonLabel)
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(
@@ -228,17 +322,13 @@ extension AnnouncementContentPreviewListFeature: View {
         .padding()
     }
     
-    @ViewBuilder private func cell(_ content: Content) -> some View {
+    @ViewBuilder private func cell(_ content: AnnouncementItem) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(content.createdAt.toString(by: .ddMMMyy))
+            AsyncDateView(date: content.createdAt, format: .ddMMMyy)
                 .foregroundStyle(.gray)
             
             Text(content.content)
                 .lineLimit(3)
         }
     }
-}
-
-#Preview {
-    PreferenceFeature()
 }

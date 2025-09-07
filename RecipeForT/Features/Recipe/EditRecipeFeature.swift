@@ -6,43 +6,231 @@
 //
 
 import SwiftUI
+import ComposableArchitecture
 
-@MainActor
+@Reducer
 struct EditRecipeFeature {
-    typealias MissingField = EditRecipeState.MissingField
+    private enum CancelID { case authStateSubscription }
     
-    @Environment(\.router) private var router
-    @Environment(MemberModel.self) private var memberModel
-    @Environment(\.recipeRepository) private var recipeRepository
-    @State private var state: EditRecipeState
+    enum ScrollTarget {
+        case base, ingredient, steps
+    }
     
-    init(recipe: Recipe?) {
-        state = EditRecipeState(recipe: recipe)
+    @ObservableState
+    struct State: Equatable {
+        var baseInfo: RecipeBaseInfoFeature.State
+        var ingredientsInfo: RecipeIngredientsInfoFeature.State
+        var detailedSteps: RecipeDetailedStepInfoFeature.State
+        
+        var authState: AuthenticationState = .loggedOut
+        var isLoading: Bool = false
+        var isMustReadSheetPresented: Bool = false
+        var isAuthViewPresented: Bool = false
+        var floaterItem: FloaterItem?
+        var scrollToTarget: ScrollTarget?
+        @Presents var fullScreenCoverDestination: FullScreenCoverDestination.State?
+        
+        init(recipe: Recipe?) {
+            baseInfo = .init(recipe: recipe)
+            ingredientsInfo = .init(recipe: recipe)
+            detailedSteps = .init(recipe: recipe)
+        }
+    }
+    
+    enum Action {
+        @CasePathable
+        enum ViewAction {
+            case task
+            case dismissButtonTapped
+            case submitButtonTapped
+            case setSheetPresented(Bool)
+        }
+        
+        @CasePathable
+        enum InternalAction {
+            case authStateChanged(AuthenticationState)
+            case setScrollToTarget(ScrollTarget?)
+            case setFloaterItem(FloaterItem?)
+            case uploadResponse(Result<Void, Error>)
+        }
+        
+        @CasePathable
+        enum Delegate {
+            case saveCompleted
+        }
+        
+        case view(ViewAction)
+        case `internal`(InternalAction)
+        case delegate(Delegate)
+        
+        case baseInfo(RecipeBaseInfoFeature.Action)
+        case ingredientsInfo(RecipeIngredientsInfoFeature.Action)
+        case detailedSteps(RecipeDetailedStepInfoFeature.Action)
+        case fullScreenCover(PresentationAction<FullScreenCoverDestination.Action>)
+    }
+    
+    @Dependency(\.recipeClient) var recipeClient
+    @Dependency(\.authClient) var authClient
+    @Dependency(\.dismiss) var dismiss
+    
+    var body: some Reducer<State, Action> {
+        Scope(state: \.baseInfo, action: \.baseInfo) { RecipeBaseInfoFeature() }
+        Scope(state: \.ingredientsInfo, action: \.ingredientsInfo) { RecipeIngredientsInfoFeature() }
+        Scope(state: \.detailedSteps, action: \.detailedSteps) { RecipeDetailedStepInfoFeature() }
+        
+        Reduce { state, action in
+            switch action {
+            case .view(.task):
+                return .run { send in
+                    for await authState in authClient.authenticationState() {
+                        await send(.internal(.authStateChanged(authState)))
+                    }
+                }
+                .cancellable(id: CancelID.authStateSubscription)
+                
+            case .view(.dismissButtonTapped):
+                return .run { _ in await dismiss() }
+            case .view(.submitButtonTapped):
+                guard state.baseInfo.selectedImage != nil else {
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Image").message)
+                    return .merge(
+                        .send(.internal(.setFloaterItem(item))),
+                        .send(.internal(.setScrollToTarget(.base)))
+                    )
+                    .animation()
+                }
+                
+                guard state.baseInfo.title.isEmpty == false else {
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Title").message)
+                    return .merge(
+                        .send(.internal(.setFloaterItem(item))),
+                        .send(.internal(.setScrollToTarget(.base)))
+                    )
+                    .animation()
+                }
+                
+                guard state.ingredientsInfo.ingredients.isEmpty == false else {
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Ingredient").message)
+                    return .merge(
+                        .send(.internal(.setFloaterItem(item))),
+                        .send(.internal(.setScrollToTarget(.ingredient)))
+                    )
+                    .animation()
+                }
+                
+                guard state.detailedSteps.steps.isEmpty == false else {
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Step").message)
+                    return .merge(
+                        .send(.internal(.setFloaterItem(item))),
+                        .send(.internal(.setScrollToTarget(.steps)))
+                    )
+                    .animation()
+                }
+                
+                guard case .loggedIn(let member) = state.authState else {
+                    state.fullScreenCoverDestination = .auth(AuthFeature.State())
+                    return .none
+                }
+                
+                state.isLoading = true
+                return .run { [
+                    id = member.id,
+                    title = state.baseInfo.title,
+                    imageItem = state.baseInfo.selectedImage,
+                    servings = state.baseInfo.servings,
+                    cost = state.baseInfo.cost,
+                    cookingTime = state.baseInfo.time,
+                    notes = state.baseInfo.notes,
+                    ingredients = state.ingredientsInfo.ingredients,
+                    sources = state.ingredientsInfo.sources,
+                    steps = state.detailedSteps.steps
+                ] send in
+                    do {
+                        _ = try await recipeClient.create(
+                            id,
+                            title,
+                            imageItem,
+                            Decimal(string: servings),
+                            Decimal(string: cost),
+                            Decimal(string: cookingTime),
+                            notes,
+                            ingredients.map(\.ingredient),
+                            sources.map(\.ingredient),
+                            steps.map {
+                                CookingStep(id: $0.id, title: $0.title, detailedProcesses: $0.processes.map(\.process))
+                            }
+                        )
+                        
+                        await send(.internal(.uploadResponse(.success(()))))
+                    } catch {
+                        await send(.internal(.uploadResponse(.failure(error))))
+                    }
+                }
+                
+            case .view(.setSheetPresented(let isPresented)):
+                state.isMustReadSheetPresented = isPresented
+                return .none
+                
+            case .internal(.authStateChanged(let authState)):
+                state.authState = authState
+                return .none
+                
+            case .internal(.setScrollToTarget(let target)):
+                state.scrollToTarget = target
+                return .run { send in
+                    try await Task.sleep(for: .milliseconds(500))
+                    await send(.internal(.setScrollToTarget(nil)))
+                }
+                .animation(.smooth)
+                
+            case .internal(.setFloaterItem(let item)):
+                state.floaterItem = item
+                return .none
+                
+            case .internal(.uploadResponse(.success)):
+                state.isLoading = false
+                return .run { send in
+                    await send(.delegate(.saveCompleted))
+                }
+                
+            case .internal(.uploadResponse(.failure)):
+                state.isLoading = false
+                let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
+                return .send(.internal(.setFloaterItem(item)))
+                
+            case .fullScreenCover(.dismiss):
+                guard case .loggedIn = state.authState else { return .none }
+                return .send(.view(.submitButtonTapped))
+                
+            default:
+                return .none
+            }
+        }
+        .ifLet(\.$fullScreenCoverDestination, action: \.fullScreenCover) { FullScreenCoverDestination() }
     }
 }
 
-// MARK: - ViewFeature Conformation
-extension EditRecipeFeature: ViewFeature {
-    enum UIEvent {
-        case toggleMustReadSheet
-        case submitRecipe
-        case dismiss
-    }
-    
-    func notify(_ event: UIEvent) {
-        switch event {
-        case .toggleMustReadSheet:
-            state.isMustReadSheetPresented.toggle()
-        case .submitRecipe:
-            uploadRecipe()
-        case .dismiss:
-            router.dismiss()
+extension EditRecipeFeature {
+    @Reducer
+    struct FullScreenCoverDestination {
+        @ObservableState
+        enum State: Equatable {
+            case auth(AuthFeature.State)
+        }
+        
+        enum Action {
+            case auth(AuthFeature.Action)
+        }
+        
+        var body: some Reducer<State, Action> {
+            Scope(state: \.auth, action: \.auth) { AuthFeature() }
         }
     }
 }
 
-// MARK: - View Conformation
-extension EditRecipeFeature: View {
+struct EditRecipeView: View {
+    @Bindable var store: StoreOf<EditRecipeFeature>
+    
     var body: some View {
         VStack {
             navigationHeader
@@ -50,37 +238,39 @@ extension EditRecipeFeature: View {
             ScrollViewReader { proxy in
                 ScrollView(.vertical) {
                     LazyVStack {
-                        RecipeBaseInfoFeature(state: state)
-                            .id(MissingField.image.scrollTargetID)
+                        RecipeBaseInfoView(store: store.scope(state: \.baseInfo, action: \.baseInfo))
+                            .id(EditRecipeFeature.ScrollTarget.base)
+                            
+                        thickDivider
+                        
+                        RecipeIngredientsInfoView(store: store.scope(state: \.ingredientsInfo, action: \.ingredientsInfo))
+                            .id(EditRecipeFeature.ScrollTarget.ingredient)
                         
                         thickDivider
                         
-                        RecipeIngredientsInfoFeature(state: state)
-                            .id(MissingField.ingredients.scrollTargetID)
-                        
-                        thickDivider
-                        
-                        RecipeDetailedStepInfoFeature(state: state)
-                            .id(MissingField.steps.scrollTargetID)
+                        RecipeDetailedStepInfoView(store: store.scope(state: \.detailedSteps, action: \.detailedSteps))
+                            .id(EditRecipeFeature.ScrollTarget.steps)
                     }
                 }
-                .onChange(of: state.missingField) { _, newValue in
-                    guard let newValue else { return }
-                    scrollToMissingField(newValue, using: proxy)
+                .onChange(of: store.scrollToTarget) { _, target in
+                    guard let target else { return }
+                    withAnimation { proxy.scrollTo(target, anchor: .center) }
                 }
             }
         }
-        .fullScreenCover(isPresented: $state.isMustReadSheetPresented) {
+        .fullScreenCover(isPresented: $store.isMustReadSheetPresented.sending(\.view.setSheetPresented)) {
             MustReadSheet()
         }
-        .floater($state.floaterItem)
-        .focusable()
+        .fullScreenCover(item: $store.scope(state: \.fullScreenCoverDestination?.auth, action: \.fullScreenCover.auth)) { authStore in
+            AuthView(store: authStore)
+        }
+        .floater($store.floaterItem.sending(\.internal.setFloaterItem))
     }
     
     @ViewBuilder private var navigationHeader: some View {
         HStack {
             Button {
-                notify(.dismiss)
+                store.send(.view(.dismissButtonTapped))
             } label: {
                 Image(systemName: "xmark")
             }
@@ -92,7 +282,7 @@ extension EditRecipeFeature: View {
                 Text("Recipe")
                 
                 Button {
-                    notify(.toggleMustReadSheet)
+                    store.send(.view(.setSheetPresented(true)))
                 } label: {
                     Image(systemName: "info.circle")
                 }
@@ -102,16 +292,16 @@ extension EditRecipeFeature: View {
             Spacer()
             
             Button {
-                notify(.submitRecipe)
+                store.send(.view(.submitButtonTapped))
             } label: {
-                if state.isLoading {
+                if store.isLoading {
                     ProgressView()
                 } else {
                     Text("OK")
                 }
             }
             .tint(.black)
-            .disabled(state.isLoading)
+            .disabled(store.isLoading)
         }
         .padding()
         
@@ -125,141 +315,57 @@ extension EditRecipeFeature: View {
     }
 }
 
-// MARK: - Methods
-private extension EditRecipeFeature {
-    func scrollToMissingField(_ field: MissingField, using proxy: ScrollViewProxy) {
-        withAnimation {
-            proxy.scrollTo(field.scrollTargetID, anchor: .center)
-        }
-        state.missingField = nil
-    }
+struct MustReadSheet: View {
+    @Environment(\.dismiss) private var dismiss
     
-    func checkRequiredFields() -> Bool {
-        guard state.image != nil else {
-            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Image").message)
-            state.floaterItem = item
-            state.missingField = .image
-            return false
-        }
-        
-        guard state.title.isEmpty == false else {
-            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Title").message)
-            state.floaterItem = item
-            state.missingField = .title
-            return false
-        }
-        
-        guard state.ingredients.isEmpty == false else {
-            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Ingredient").message)
-            state.floaterItem = item
-            state.missingField = .ingredients
-            return false
-        }
-        
-        guard state.steps.isEmpty == false else {
-            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.missingRequiredFields(which: "Step").message)
-            state.floaterItem = item
-            state.missingField = .steps
-            return false
-        }
-        
-        return true
-    }
-    
-    func uploadRecipe() {
-        state.cancelTask(for: #function)
-        
-        guard checkRequiredFields() else { return }
-        
-        let task = Task {
-            state.isLoading = true
-            defer { state.isLoading = false }
-            
-            guard let member = memberModel.user else { return router.route(to: .loginView) }
-            
-            do {
-                _ = try await recipeRepository.create(
-                    userID: member.id,
-                    title: state.title,
-                    image: state.image,
-                    servings: Decimal(string: state.servings),
-                    cost: Decimal(string: state.cost),
-                    cookingTime: Decimal(string: state.time),
-                    notes: state.notes,
-                    basicIngredients: state.ingredients,
-                    sources: state.sources,
-                    detailedSteps: state.steps
-                )
+    var body: some View {
+        VStack {
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                }
+                .tint(.black)
                 
-                router.dismiss()
-            } catch {
-                state.floaterItem = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
+                Spacer()
+                
+                Text("Must read")
+                
+                Spacer()
             }
-        }
-        
-        state.storeTask(for: #function, task: task)
-    }
-}
-
-
-// MARK: - Subviews
-extension EditRecipeFeature {
-    struct MustReadSheet: View {
-        @Environment(\.dismiss) private var dismiss
-        
-        var body: some View {
-            VStack {
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                    .tint(.black)
+            .padding()
+            
+            Divider()
+            
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Sauce mixing order")
+                        .font(.headline)
                     
-                    Spacer()
+                    Text("When writing out detailed recipe steps, please follow this order:")
+                        .bulletPoint()
                     
-                    Text("Must read")
+                    Text("List the ingredients starting with those that don't stick to the spoon, followed by those that do. (e.g. sugar, salt -> honey, soy sauce")
+                        .bulletPoint()
                     
-                    Spacer()
+                    Text("Measurement units")
+                        .font(.headline)
+                    
+                    Text("1T: 1 tablespoon")
+                        .bulletPoint()
+                    
+                    Text("1t: 1 teaspoon")
+                        .bulletPoint()
+                    
+                    Text("Recipe")
+                        .font(.headline)
+                    
+                    Text("When writing a recipe, avoid writing long sentences. Break them down into shorter steps as much as possible.")
+                        .bulletPoint()
                 }
-                .padding()
-                
-                Divider()
-                
-                ScrollView(.vertical) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Sauce mixing order")
-                            .font(.headline)
-                        
-                        Text("When writing out detailed recipe steps, please follow this order:")
-                            .bulletPoint()
-                        
-                        Text("List the ingredients starting with those that don't stick to the spoon, followed by those that do. (e.g. sugar, salt -> honey, soy sauce")
-                            .bulletPoint()
-                        
-                        Text("Measurement units")
-                            .font(.headline)
-                        
-                        Text("1T: 1 tablespoon")
-                            .bulletPoint()
-                        
-                        Text("1t: 1 teaspoon")
-                            .bulletPoint()
-                        
-                        Text("Recipe")
-                            .font(.headline)
-                        
-                        Text("When writing a recipe, avoid writing long sentences. Break them down into shorter steps as much as possible.")
-                            .bulletPoint()
-                    }
-                    .padding(16)
-                }
+                .padding(16)
             }
         }
     }
-}
-
-#Preview {
-    EditRecipeFeature(recipe: nil)
 }

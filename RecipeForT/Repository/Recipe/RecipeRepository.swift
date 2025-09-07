@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol RecipeRepositoryProtocol {
+protocol RecipeRepositoryProtocol: Sendable {
     func create(
         userID: String,
         title: String,
@@ -143,7 +143,7 @@ extension RecipeRepository: RecipeRepositoryProtocol {
         
         do {
             let response = try await networkService.request(endpoint)
-            let urlString = try response.mapString()
+            guard let urlString = String(data: response.data, encoding: .utf8) else { return nil }
             return URL(string: urlString)
         } catch let error as NetworkServiceError {
             throw RecipeRepositoryError.networkError(error)

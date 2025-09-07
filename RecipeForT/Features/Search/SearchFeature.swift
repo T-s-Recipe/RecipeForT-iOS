@@ -6,53 +6,106 @@
 //
 
 import SwiftUI
+import ComposableArchitecture
 
-@MainActor
+@Reducer
 struct SearchFeature {
+    private enum CancelID { case search }
+    
+    @ObservableState
+    struct State: Equatable {
+        enum Entity: Equatable {
+            case loading
+            case loaded(recipes: IdentifiedArrayOf<Recipe>)
+            case notFound
+        }
+        
+        var entity: Entity = .loaded(recipes: [])
+        var searchingText: String = String()
+    }
+    
+    enum Action {
+        @CasePathable
+        enum ViewAction {
+            case textChanged(String)
+            case textSubmitted
+        }
+        
+        @CasePathable
+        enum InternalAction {
+            case searchResponse(Result<[Recipe], Error>)
+        }
+        
+        @CasePathable
+        enum Delegate {
+            case recipeCellTapped(Recipe)
+        }
+        
+        case view(ViewAction)
+        case `internal`(InternalAction)
+        case delegate(Delegate)
+    }
+    
+    @Dependency(\.recipeClient) var recipeClient
+    
+    var body: some Reducer<State, Action> {
+        Reduce { state, action in
+            switch action {
+            case .view(.textChanged(let text)):
+                state.searchingText = text
+                return .none
+                
+            case .view(.textSubmitted):
+                guard state.searchingText.isEmpty == false else {
+                    state.entity = .loaded(recipes: [])
+                    return .cancel(id: CancelID.search)
+                }
+                
+                state.entity = .loading
+                return .run { send in
+                    do {
+                        // TODO: 검색 API 추가 후 구현
+                        let recipes = try await recipeClient.readRecipe("mock")
+                        await send(.internal(.searchResponse(.success([recipes]))))
+                    } catch {
+                        await send(.internal(.searchResponse(.failure(error))))
+                    }
+                }
+                .cancellable(id: CancelID.search, cancelInFlight: true)
+                
+            case .internal(.searchResponse(.success(let recipes))):
+                state.entity = recipes.isEmpty ? .notFound : .loaded(recipes: .init(uniqueElements: recipes))
+                return .none
+                
+            case .internal(.searchResponse(.failure)):
+                state.entity = .notFound
+                return .none
+                
+            case .delegate:
+                return .none
+            }
+        }
+    }
+}
+
+struct SearchView: View {
     struct Constants {
         static let errorPageTitle: String = "No Result Found"
         static let errorPageSubtitle: String = "Can't find what you're looking for?\nJust let us know and we'll add it for you!"
     }
     
-    @Environment(\.router) private var router
-    @Environment(\.recipeRepository) private var recipeRepository
-    @State private var state = SearchState()
+    @Bindable var store: StoreOf<SearchFeature>
     
     private let columns: [GridItem] = [
         .init(.adaptive(minimum: 120, maximum: .infinity)),
         .init(.adaptive(minimum: 120, maximum: .infinity))
     ]
-}
-
-// MARK: - ViewFeature Conformation
-extension SearchFeature: ViewFeature {
-    enum UIEvent {
-        case task
-        case submit(String)
-    }
     
-    func notify(_ event: UIEvent) {
-        switch event {
-        case .task:
-            break
-        case .submit(let keyword):
-            fetchSearchResults(keyword)
-        }
-    }
-}
-
-// MARK: - View Conformation
-extension SearchFeature: View {
     var body: some View {
         VStack {
-            SearchBar(text: $state.searchingText) {
-                notify(.submit(state.searchingText))
-            }
+            SearchBar(text: $store.searchingText.sending(\.view.textChanged)) { store.send(.view(.textSubmitted)) }
             
-            switch state.entity {
-            case .loading:
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            switch store.entity {
             case .loaded(let recipes):
                 ScrollView(.vertical) {
                     LazyVGrid(columns: columns) {
@@ -61,12 +114,14 @@ extension SearchFeature: View {
                         }
                     }
                 }
+                
+            case .loading:
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                
             case .notFound:
                 unavailableView
             }
-        }
-        .task {
-            notify(.task)
         }
     }
     
@@ -116,7 +171,7 @@ extension SearchFeature: View {
         }
         .clipShape(.rect)
         .onTapGesture {
-            router.route(to: .recipeGuideView(recipe))
+            store.send(.delegate(.recipeCellTapped(recipe)))
         }
     }
     
@@ -149,22 +204,8 @@ extension SearchFeature: View {
     }
 }
 
-// MARK: - Methods
-private extension SearchFeature {
-    func fetchSearchResults(_ keyword: String) {
-        state.cancelTask(for: #function)
-        
-        let task = Task {
-            // TODO: 레시피 검색 기능 추가
-            state.entity = .loading
-        }
-        
-        state.storeTask(for: #function, task: task)
-    }
-}
-
 // MARK: - Subviews
-extension SearchFeature {
+extension SearchView {
     struct SearchBar: View {
         @Binding var text: String
         @FocusState private var isFocused: Bool
@@ -219,8 +260,4 @@ extension SearchFeature {
             isFocused = false
         }
     }
-}
-
-#Preview {
-    SearchFeature()
 }

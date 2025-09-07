@@ -6,70 +6,166 @@
 //
 
 import SwiftUI
+import ComposableArchitecture
 
-@MainActor
+@Reducer
 struct RecipeListFeature {
+    private enum CancelID { case fetchRecipes }
+    
+    @ObservableState
+    struct State: Equatable {
+        static let fetchLimit: Int32 = 16
+        
+        var recipes: IdentifiedArrayOf<Recipe> = []
+        var nextPageID: String?
+        var isLoading: Bool = false
+        var isErrorOccured: Bool = false
+        var didLoadInitially: Bool = false
+        var floaterItem: FloaterItem?
+    }
+    
+    enum Action {
+        @CasePathable
+        enum ViewAction {
+            case onAppear
+            case refreshTapped
+            case lastRecipeAppeared(Recipe)
+            case recipeCellTapped(Recipe)
+            case presentFloater(FloaterItem?)
+        }
+        
+        @CasePathable
+        enum InternalAction {
+            case recipesResponse(Result<RecipePage, Error>)
+        }
+        
+        @CasePathable
+        enum DelegateAction {
+            case routeRecipeDetail(Recipe)
+            case onAppear
+            case synchronize(recipes: IdentifiedArrayOf<Recipe>, nextPageID: String?)
+        }
+        
+        case view(ViewAction)
+        case `internal`(InternalAction)
+        case delegate(DelegateAction)
+    }
+    
+    @Dependency(\.recipeClient) var recipeClient
+    
+    var body: some Reducer<State, Action> {
+        Reduce { state, action in
+            switch action {
+            case .view(.onAppear):
+                return .concatenate(
+                    .send(.delegate(.onAppear)),
+                    .run { [didLoadInitially = state.didLoadInitially] send in
+                        guard didLoadInitially == false else { return }
+                        await send(.view(.refreshTapped))
+                    }
+                )
+                
+            case .view(.refreshTapped):
+                state.isErrorOccured = false
+                state.isLoading = true
+                state.recipes.removeAll()
+                state.nextPageID = nil
+                return fetchRecipes(pageID: state.nextPageID)
+                
+            case .view(.lastRecipeAppeared(let recipe)):
+                let thresholdIndex = state.recipes.index(state.recipes.endIndex, offsetBy: -5)
+                guard state.nextPageID != nil,
+                      state.isLoading == false,
+                      let index = state.recipes.firstIndex(where: { $0.id == recipe.id }),
+                      index >= thresholdIndex
+                else { return .none }
+                state.isLoading = true
+                return fetchRecipes(pageID: state.nextPageID)
+                
+            case .view(.recipeCellTapped(let recipe)):
+                return .send(.delegate(.routeRecipeDetail(recipe)))
+                
+            case .view(.presentFloater(let item)):
+                state.floaterItem = item
+                return .none
+                
+            case .internal(.recipesResponse(.success(let page))):
+                state.isLoading = false
+                state.isErrorOccured = false
+                
+                if state.didLoadInitially == false { state.didLoadInitially = true }
+                if state.didLoadInitially {
+                    state.recipes.append(contentsOf: page.recipes)
+                } else {
+                    state.recipes = IdentifiedArray(uniqueElements: page.recipes)
+                }
+                state.nextPageID = page.nextPageID
+                return .send(.delegate(.synchronize(recipes: state.recipes, nextPageID: state.nextPageID)))
+                
+            case .internal(.recipesResponse(.failure)):
+                state.isLoading = false
+                guard state.recipes.isEmpty == false else {
+                    state.isErrorOccured = true
+                    return .none
+                }
+                let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
+                state.floaterItem = item
+                return .none
+                
+            case .delegate:
+                return .none
+            }
+        }
+    }
+    
+    private func fetchRecipes(pageID: String?) -> Effect<Action> {
+        return .run { send in
+            do {
+                let page = try await recipeClient.readPage(pageID, State.fetchLimit)
+                await send(.internal(.recipesResponse(.success(page))))
+            } catch {
+                await send(.internal(.recipesResponse(.failure(error))))
+            }
+        }
+        .cancellable(id: CancelID.fetchRecipes, cancelInFlight: true)
+    }
+}
+
+struct RecipeListView: View {
     struct Constants {
         static let errorPageTitle: String = "Something went wrong..\nPlease try again."
         static let errorPageSubtitle: String = "If the issue persists,\nplease reach out to customer service."
     }
     
-    @Environment(\.router) private var router
-    @Environment(\.recipeRepository) private var recipeRepository
-    @State private var state = RecipeListState()
+    @Bindable var store: StoreOf<RecipeListFeature>
     
     private let column: [GridItem] = [
         .init(.adaptive(minimum: 120, maximum: .infinity)),
         .init(.adaptive(minimum: 120, maximum: .infinity))
     ]
-}
-
-// MARK: - ViewFeature Conformation
-extension RecipeListFeature: ViewFeature {
-    enum UIEvent {
-        case needToMoreRecipes(recipeID: String)
-        case refresh
-    }
     
-    func notify(_ event: UIEvent) {
-        switch event {
-        case .needToMoreRecipes(let recipeID):
-            loadMoreRecipes(recipeID: recipeID)
-        case .refresh:
-            loadRecipes()
-        }
-    }
-}
-
-// MARK: - View Conformation
-extension RecipeListFeature: View {
     var body: some View {
-        if state.isErrorOccurred {
+        if store.isErrorOccured {
             unavailableView
         } else {
             ScrollView(.vertical) {
                 LazyVGrid(columns: column, spacing: 8) {
-                    ForEach(state.recipes) { recipe in
+                    ForEach(store.recipes) { recipe in
                         recipeCell(recipe)
-                            .onAppear { notify(.needToMoreRecipes(recipeID: recipe.id)) }
+                            .onAppear { store.send(.view(.lastRecipeAppeared(recipe))) }
                     }
                 }
                 .padding(.horizontal)
                 
-                if state.isLoading {
+                if store.isLoading {
                     ProgressView()
                 }
             }
             .onAppear {
-                guard state.hasInitiallyLoaded == false else { return }
-                notify(.refresh)
-                state.hasInitiallyLoaded = true
+                store.send(.view(.onAppear))
             }
-            .refreshable { notify(.refresh) }
-            .onChange(of: state.floaterItem) { _, newValue in
-                guard let newValue else { return }
-                router.presentFloater(role: newValue.role, message: newValue.message)
-            }
+            .refreshable { store.send(.view(.refreshTapped)) }
+            .floater($store.floaterItem.sending(\.view.presentFloater))
         }
     }
     
@@ -119,7 +215,7 @@ extension RecipeListFeature: View {
         }
         .clipShape(.rect)
         .onTapGesture {
-            router.route(to: .recipeGuideView(recipe))
+            store.send(.view(.recipeCellTapped(recipe)))
         }
     }
     
@@ -136,76 +232,18 @@ extension RecipeListFeature: View {
                 .foregroundStyle(.secondary)
             
             Button {
-                notify(.refresh)
+                store.send(.view(.refreshTapped))
             } label: {
                 Text("Refresh Page")
                     .padding()
                     .bold()
             }
-            .buttonStyle(.roundedProminent(foreground: .white, background: .black, isLoading: state.isLoading))
+            .buttonStyle(.roundedProminent(foreground: .white, background: .black, isLoading: store.isLoading))
+            .disabled(store.isLoading)
             
             Text(Constants.errorPageSubtitle)
                 .foregroundStyle(.secondary)
         }
         .multilineTextAlignment(.center)
     }
-}
-
-// MARK: - Methods
-private extension RecipeListFeature {
-    func loadRecipes() {
-        state.cancelTask(for: #function)
-        state.flush()
-        
-        let task = Task {
-            state.isErrorOccurred = false
-            state.isLoading = true
-            defer { state.isLoading = false }
-            
-            do {
-                let page = try await recipeRepository.read(pageID: state.nextPageID, limit: state.fetchLimit)
-                
-                guard Task.isCancelled == false else { return }
-                
-                state.recipes = page.recipes
-                state.nextPageID = page.nextPageID
-            } catch {
-                state.isErrorOccurred = true
-            }
-        }
-        
-        state.storeTask(for: #function, task: task)
-    }
-    
-    func loadMoreRecipes(recipeID: String) {
-        guard state.recipes.isEmpty == false,
-              state.fetchLimit <= state.recipes.count,
-              state.recipes.last?.id == recipeID,
-              let nextPageID = state.nextPageID
-        else { return }
-        
-        state.cancelTask(for: #function)
-        
-        let task = Task {
-            state.isLoading = true
-            defer { state.isLoading = false }
-            
-            do {
-                let page = try await recipeRepository.read(pageID: nextPageID, limit: state.fetchLimit)
-                
-                guard Task.isCancelled == false else { return }
-                
-                state.recipes += page.recipes
-                state.nextPageID = page.nextPageID
-            } catch {
-                state.floaterItem = .init(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
-            }
-        }
-        
-        state.storeTask(for: #function, task: task)
-    }
-}
-
-#Preview {
-    RecipeListFeature()
 }

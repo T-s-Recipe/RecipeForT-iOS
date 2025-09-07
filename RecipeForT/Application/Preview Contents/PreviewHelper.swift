@@ -6,21 +6,10 @@
 //
 
 import Foundation
-import Swinject
 
+@MainActor
 final class PreviewHelper {
     static let shared = PreviewHelper()
-    
-    lazy var router = Router()
-    
-    lazy var resolver: Resolver = {
-        let assembler = Assembler([
-            DomainAssembly(),
-            RepositoryAssembly(),
-            InfrastructureAssembly()
-        ])
-        return assembler.resolver
-    }()
     
     lazy var mockRecipe = Recipe(
         id: UUID().uuidString,

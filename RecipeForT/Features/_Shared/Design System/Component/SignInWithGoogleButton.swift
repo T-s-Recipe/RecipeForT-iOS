@@ -102,11 +102,3 @@ struct SignInWithGoogleButton: View {
         }
     }
 }
-
-#Preview {
-//    SignInWithGoogleButton(.continue) { _ in
-//        
-//    }
-    
-    AuthFeature()
-}
