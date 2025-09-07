@@ -25,7 +25,7 @@ enum Endpoint {
     
     // MARK: - Recipe
     case uploadRecipe(CreateRecipeRequestDTO)                                                                   // 레시피 등록
-    case uploadRecipeImage(ImageItem)                                                                           // 레시피 이미지 등록
+    case fetchImageholderLink(ImageUploadRequestDTO)                                                            // S3 파일 업로드 URL 요청
     case fetchRecipeDetail(recipeID: String)                                                                    // 레시피 단건 조회
     case fetchRecipeList(nextPageID: String?, limit: Int32)                                                     // 페이지네이션 레시피 목록 조회
 }
@@ -33,7 +33,7 @@ enum Endpoint {
 extension Endpoint {
     var usingToken: Bool {
         switch self {
-        case .fetchMemberInfo, .uploadRecipe, .uploadRecipeImage, .unregister:
+        case .fetchMemberInfo, .uploadRecipe, .fetchImageholderLink, .unregister:
             true
         default:
             false
@@ -67,7 +67,7 @@ extension Endpoint: TargetType {
         case .checkNicknameDuplication: "/members/nickname/check"
             
         case .uploadRecipe: "/recipes"
-        case .uploadRecipeImage: "/recipes/image-upload"
+        case .fetchImageholderLink: "/recipes/file-upload"
         case .fetchRecipeDetail(let recipeID): "/recipes/\(recipeID)"
         case .fetchRecipeList: "/recipes/recent"
         }
@@ -76,7 +76,7 @@ extension Endpoint: TargetType {
     var method: Moya.Method {
         switch self {
         case .fetchMemberInfo, .fetchRandomNickname, .fetchRecipeDetail, .fetchRecipeList, .checkNicknameDuplication: .get
-        case .signIn, .reissueToken, .logout, .register, .uploadRecipe, .uploadRecipeImage: .post
+        case .signIn, .reissueToken, .logout, .register, .uploadRecipe, .fetchImageholderLink: .post
         case .updateMemberInfo: .patch
         case .unregister: .delete
         }
@@ -107,10 +107,8 @@ extension Endpoint: TargetType {
             
         case .uploadRecipe(let dto):
             return .requestJSONEncodable(dto)
-        case .uploadRecipeImage(let item):
-            var formDatas = [MultipartFormData]()
-            formDatas.append(.init(provider: .data(item.data), name: "imageFile"))
-            return .uploadMultipart(formDatas)
+        case .fetchImageholderLink(let dto):
+            return .requestJSONEncodable(dto)
         case .fetchRecipeDetail:
             return .requestPlain
         case .fetchRecipeList(let nextPageID, let limit):

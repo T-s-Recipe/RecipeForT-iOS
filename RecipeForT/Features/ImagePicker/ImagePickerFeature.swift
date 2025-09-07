@@ -121,12 +121,11 @@ struct ImagePickerFeature {
                     guard let data = try? await item.loadTransferable(type: Data.self),
                           let uiImage = UIImage(data: data),
                           let resizedImage = resizeImage(image: uiImage, targetWidth: targetWidth),
-                          let resizedData = resizedImage.jpegData(compressionQuality: 0.8),
-                          let utType = item.supportedContentTypes.first
+                          let resizedData = resizedImage.jpegData(compressionQuality: 0.8)
                     else {
                         return await send(.internal(.convertImageResponse(nil)))
                     }
-                    let mimeTypeString = "jpeg"
+                    let mimeTypeString = "image/jpeg"
                     let name = item.itemIdentifier ?? "photo"
                     let imageItem = ImageItem(data: resizedData, mimeType: mimeTypeString, filename: name)
                     return await send(.internal(.convertImageResponse(imageItem)))
@@ -139,7 +138,7 @@ struct ImagePickerFeature {
                     guard let resizedImage = resizeImage(image: image, targetWidth: targetWidth),
                           let data = resizedImage.jpegData(compressionQuality: 0.8)
                     else { return await send(.internal(.convertImageResponse(nil))) }
-                    let mimeTypeString = "jpeg"
+                    let mimeTypeString = "image/jpeg"
                     let name = "photo"
                     let imageItem = ImageItem(data: data, mimeType: mimeTypeString, filename: name)
                     return await send(.internal(.convertImageResponse(imageItem)))
