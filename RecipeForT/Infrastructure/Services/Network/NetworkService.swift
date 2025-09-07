@@ -38,45 +38,6 @@ final class NetworkService: @unchecked Sendable {
         let plugins = [TokenManagerPlugin(tokenStorage: tokenStorage)]
         self.provider = MoyaProvider<MultiTarget>(session: session, plugins: plugins)
     }
-    
-    private func mapError(_ error: MoyaError) -> NetworkServiceError {
-        switch error {
-        case .imageMapping(let response), .jsonMapping(let response), .stringMapping(let response):
-            print("Failed to map response to expected format: \(response.description)")
-            return .decodingFailed
-        case .objectMapping(let error, let response):
-            print("Object mapping failed: \(error.localizedDescription), \(response.description)")
-            return .decodingFailed
-        case .encodableMapping(let error):
-            print("Encodable mapping failed: \(error.localizedDescription)")
-            return .encodingFailed
-        case .statusCode(let response):
-            switch response.statusCode {
-            case 401:
-                print("Unauthorized error (401): \(response.description)")
-                return .unauthorized
-            case 404:
-                print("Resource not found (404): \(response.description)")
-                return .notFound
-            case 500..<600:
-                print("Server error (\(response.statusCode): \(response.description)")
-                return .serverError
-            default:
-                print("Invalid response: \(response.statusCode): \(response.description)")
-                return .invalidResponse
-            }
-        case .underlying(let error, _):
-            print("Underlying error: \(error.localizedDescription)")
-            guard (error as NSError).code == NSURLErrorTimedOut else { return .networkFailure }
-            return .timeout
-        case .requestMapping(let string):
-            print("Request mapping failed: \(string)")
-            return .requestMapping
-        case .parameterEncoding(let error):
-            print("Parameter encoding failed: \(error.localizedDescription)")
-            return .encodingFailed
-        }
-    }
 }
 
 // MARK: - NetworkServiceProtocol Conformation
@@ -101,23 +62,42 @@ extension NetworkService: NetworkServiceProtocol {
 // MARK: - MoyaProvider + HelperMethods
 extension MoyaProvider {
     func asyncRequest(_ target: Target) async throws -> NetworkResponse {
-        func mapToNetworkError(_ error: MoyaError) -> NetworkServiceError {
+        func mapError(_ error: MoyaError) -> NetworkServiceError {
             switch error {
+            case .imageMapping(let response), .jsonMapping(let response), .stringMapping(let response):
+                print("Failed to map response to expected format: \(response.description)")
+                return .decodingFailed
+            case .objectMapping(let error, let response):
+                print("Object mapping failed: \(error.localizedDescription), \(response.description)")
+                return .decodingFailed
+            case .encodableMapping(let error):
+                print("Encodable mapping failed: \(error.localizedDescription)")
+                return .encodingFailed
             case .statusCode(let response):
                 switch response.statusCode {
-                case 401: return .unauthorized
-                case 404: return .notFound
-                case 500..<600: return .serverError
-                default: return .invalidResponse
+                case 401:
+                    print("Unauthorized error (401): \(response.description)")
+                    return .unauthorized
+                case 404:
+                    print("Resource not found (404): \(response.description)")
+                    return .notFound
+                case 500..<600:
+                    print("Server error (\(response.statusCode): \(response.description)")
+                    return .serverError
+                default:
+                    print("Invalid response: \(response.statusCode): \(response.description)")
+                    return .invalidResponse
                 }
-            case .underlying(_, _):
-                return .networkFailure
-            case .objectMapping, .imageMapping, .jsonMapping, .stringMapping:
-                return .decodingFailed
-            case .encodableMapping, .parameterEncoding:
-                return .encodingFailed
-            case .requestMapping:
+            case .underlying(let error, _):
+                print("Underlying error: \(error.localizedDescription)")
+                guard (error as NSError).code == NSURLErrorTimedOut else { return .networkFailure }
+                return .timeout
+            case .requestMapping(let string):
+                print("Request mapping failed: \(string)")
                 return .requestMapping
+            case .parameterEncoding(let error):
+                print("Parameter encoding failed: \(error.localizedDescription)")
+                return .encodingFailed
             }
         }
         
@@ -129,7 +109,7 @@ extension MoyaProvider {
                     continuation.resume(returning: networkResponse)
                     
                 case .failure(let moyaError):
-                    let networkError = mapToNetworkError(moyaError)
+                    let networkError = mapError(moyaError)
                     continuation.resume(throwing: networkError)
                 }
             }
