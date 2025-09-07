@@ -126,9 +126,9 @@ struct ImagePickerFeature {
                     else {
                         return await send(.internal(.convertImageResponse(nil)))
                     }
-                    let mimeTypeString = utType.identifier
+                    let mimeTypeString = "jpeg"
                     let name = item.itemIdentifier ?? "photo"
-                    let imageItem = ImageItem(data: data, mimeType: mimeTypeString, filename: name)
+                    let imageItem = ImageItem(data: resizedData, mimeType: mimeTypeString, filename: name)
                     return await send(.internal(.convertImageResponse(imageItem)))
                 }
                 
@@ -137,7 +137,7 @@ struct ImagePickerFeature {
                 state.isProcessing = true
                 return .run { send in
                     guard let resizedImage = resizeImage(image: image, targetWidth: targetWidth),
-                          let data = image.jpegData(compressionQuality: 0.8)
+                          let data = resizedImage.jpegData(compressionQuality: 0.8)
                     else { return await send(.internal(.convertImageResponse(nil))) }
                     let mimeTypeString = "jpeg"
                     let name = "photo"
@@ -151,6 +151,7 @@ struct ImagePickerFeature {
                 
             case .internal(.convertImageResponse(let item)):
                 state.isProcessing = false
+                state.selectedImage = item
                 return .send(.delegate(.didSelectImage(item)))
                 
             case .destination(.presented(.options(.libraryButtonTapped))):
