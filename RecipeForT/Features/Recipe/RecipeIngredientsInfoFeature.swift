@@ -129,12 +129,6 @@ struct RecipeIngredientsInfoView: View {
                         ForEachStore(store.scope(state: \.ingredients, action: \.ingredient)) { ingredientStore in
                             VStack {
                                 IngredientRowView(store: ingredientStore)
-                                    .dropDestination(for: IngredientRowFeature.State.self) { items, location in
-                                        guard let droppedItem = items.first else { return false }
-                                        store.send(.view(.moveIngredient(id: droppedItem.id, destinationID: ingredientStore.id)))
-                                        return true
-                                    }
-                                    .draggable(ingredientStore.state)
                                 
                                 if ingredientStore.id != store.ingredients.last?.id {
                                     Divider().padding(.vertical, 8)
@@ -177,12 +171,6 @@ struct RecipeIngredientsInfoView: View {
                     LazyVStack {
                         ForEachStore(store.scope(state: \.sources, action: \.source)) { sourceStore in
                             IngredientRowView(store: sourceStore)
-                                .dropDestination(for: IngredientRowFeature.State.self) { items, location in
-                                    guard let droppedItem = items.first else { return false }
-                                    store.send(.view(.moveSource(id: droppedItem.id, destinationID: sourceStore.id)))
-                                    return true
-                                }
-                                .draggable(sourceStore.state)
                             
                             if sourceStore.id != store.sources.last?.id {
                                 Divider().padding(.vertical, 8)
@@ -226,13 +214,9 @@ struct IngredientRowFeature {
     let maxNameLength: Int = 20
     
     @ObservableState
-    struct State: Equatable, Identifiable, Codable, Transferable {
+    struct State: Equatable, Identifiable {
         let id: UUID
         var ingredient: Ingredient
-        
-        static var transferRepresentation: some TransferRepresentation {
-            CodableRepresentation(contentType: .ingredient)
-        }
     }
     
     enum Action {
@@ -270,10 +254,6 @@ struct IngredientRowFeature {
             }
         }
     }
-}
-
-extension UTType {
-    static let ingredient = UTType(exportedAs: "ingredient")
 }
 
 struct IngredientRowView: View {

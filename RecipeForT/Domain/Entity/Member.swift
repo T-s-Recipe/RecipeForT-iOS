@@ -8,7 +8,7 @@
 import Foundation
 
 /// 사용자 정보
-struct Member: Identifiable {
+struct Member: Identifiable, Equatable {
     let id: String
     let nickname: String
     let provider: OAuthProvider

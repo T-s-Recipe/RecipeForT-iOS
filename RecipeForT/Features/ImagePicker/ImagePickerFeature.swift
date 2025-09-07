@@ -11,6 +11,8 @@ import ComposableArchitecture
 
 @Reducer
 struct ImagePickerFeature {
+    private let targetWidth: CGFloat = 1024
+    
     @ObservableState
     struct State: Equatable {
         var selectedImage: ImageItem?
@@ -117,6 +119,9 @@ struct ImagePickerFeature {
                 state.isProcessing = true
                 return .run { send in
                     guard let data = try? await item.loadTransferable(type: Data.self),
+                          let uiImage = UIImage(data: data),
+                          let resizedImage = resizeImage(image: uiImage, targetWidth: targetWidth),
+                          let resizedData = resizedImage.jpegData(compressionQuality: 0.8),
                           let utType = item.supportedContentTypes.first
                     else {
                         return await send(.internal(.convertImageResponse(nil)))
@@ -131,7 +136,9 @@ struct ImagePickerFeature {
                 guard let image else { return .none }
                 state.isProcessing = true
                 return .run { send in
-                    guard let data = image.jpegData(compressionQuality: 0.8) else { return await send(.internal(.convertImageResponse(nil))) }
+                    guard let resizedImage = resizeImage(image: image, targetWidth: targetWidth),
+                          let data = image.jpegData(compressionQuality: 0.8)
+                    else { return await send(.internal(.convertImageResponse(nil))) }
                     let mimeTypeString = "jpeg"
                     let name = "photo"
                     let imageItem = ImageItem(data: data, mimeType: mimeTypeString, filename: name)
@@ -163,6 +170,16 @@ struct ImagePickerFeature {
             }
         }
         .ifLet(\.$destination, action: \.destination) { Destination() }
+    }
+    
+    private func resizeImage(image: UIImage, targetWidth: CGFloat) -> UIImage? {
+        let originalSize = image.size
+        let targetSize = CGSize(width: targetWidth, height: targetWidth * (originalSize.height / originalSize.width))
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        let resizedImage = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+        return resizedImage
     }
 }
 
@@ -204,7 +221,7 @@ struct ImagePickerView: View {
     
     private var defaultImage: some View {
         Button {
-            
+            store.send(.view(.selectButtonTapped))
         } label: {
             RoundedRectangle(cornerRadius: 5)
                 .fill(.clear)
@@ -222,7 +239,7 @@ struct ImagePickerView: View {
     
     private var removeButton: some View {
         Button {
-            
+            store.send(.view(.removeButtonTapped))
         } label: {
             Image(systemName: "xmark.circle.fill")
                 .frame(width: 20, height: 20)

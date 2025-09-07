@@ -118,12 +118,12 @@ struct RootFeature {
                     return .none
                     
                 case .recipeUpload:
-                    guard case .loggedIn = state.authState else {
+                    guard case .loggedIn(let member) = state.authState else {
                         state.postLoginDestination = .recipeUpload
                         state.presentation = .auth(.init())
                         return .none
                     }
-                    state.presentation = .editRecipe(.init(recipe: nil))
+                    state.presentation = .editRecipe(.init(member: member, recipe: nil))
                     return .none
                     
                 case .preferences:
@@ -183,14 +183,14 @@ struct RootFeature {
                 
             case .presentation(.dismiss):
                 guard let destination = state.postLoginDestination,
-                      case .loggedIn = state.authState
+                      case .loggedIn(let member) = state.authState
                 else {
                     state.postLoginDestination = nil
                     return .none
                 }
                 state.postLoginDestination = nil
                 if destination == .recipeUpload {
-                    state.presentation = .editRecipe(.init(recipe: nil))
+                    state.presentation = .editRecipe(.init(member: member, recipe: nil))
                     return .none
                 }
                 

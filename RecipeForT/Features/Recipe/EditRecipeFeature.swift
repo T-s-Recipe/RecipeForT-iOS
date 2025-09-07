@@ -10,27 +10,25 @@ import ComposableArchitecture
 
 @Reducer
 struct EditRecipeFeature {
-    private enum CancelID { case authStateSubscription }
-    
     enum ScrollTarget {
         case base, ingredient, steps
     }
     
     @ObservableState
     struct State: Equatable {
+        let member: Member
         var baseInfo: RecipeBaseInfoFeature.State
         var ingredientsInfo: RecipeIngredientsInfoFeature.State
         var detailedSteps: RecipeDetailedStepInfoFeature.State
         
-        var authState: AuthenticationState = .loggedOut
         var isLoading: Bool = false
         var isMustReadSheetPresented: Bool = false
         var isAuthViewPresented: Bool = false
         var floaterItem: FloaterItem?
         var scrollToTarget: ScrollTarget?
-        @Presents var fullScreenCoverDestination: FullScreenCoverDestination.State?
         
-        init(recipe: Recipe?) {
+        init(member: Member, recipe: Recipe?) {
+            self.member = member
             baseInfo = .init(recipe: recipe)
             ingredientsInfo = .init(recipe: recipe)
             detailedSteps = .init(recipe: recipe)
@@ -40,7 +38,6 @@ struct EditRecipeFeature {
     enum Action {
         @CasePathable
         enum ViewAction {
-            case task
             case dismissButtonTapped
             case submitButtonTapped
             case setSheetPresented(Bool)
@@ -66,7 +63,6 @@ struct EditRecipeFeature {
         case baseInfo(RecipeBaseInfoFeature.Action)
         case ingredientsInfo(RecipeIngredientsInfoFeature.Action)
         case detailedSteps(RecipeDetailedStepInfoFeature.Action)
-        case fullScreenCover(PresentationAction<FullScreenCoverDestination.Action>)
     }
     
     @Dependency(\.recipeClient) var recipeClient
@@ -80,14 +76,6 @@ struct EditRecipeFeature {
         
         Reduce { state, action in
             switch action {
-            case .view(.task):
-                return .run { send in
-                    for await authState in authClient.authenticationState() {
-                        await send(.internal(.authStateChanged(authState)))
-                    }
-                }
-                .cancellable(id: CancelID.authStateSubscription)
-                
             case .view(.dismissButtonTapped):
                 return .run { _ in await dismiss() }
             case .view(.submitButtonTapped):
@@ -127,14 +115,9 @@ struct EditRecipeFeature {
                     .animation()
                 }
                 
-                guard case .loggedIn(let member) = state.authState else {
-                    state.fullScreenCoverDestination = .auth(AuthFeature.State())
-                    return .none
-                }
-                
                 state.isLoading = true
                 return .run { [
-                    id = member.id,
+                    id = state.member.id,
                     title = state.baseInfo.title,
                     imageItem = state.baseInfo.selectedImage,
                     servings = state.baseInfo.servings,
@@ -171,10 +154,6 @@ struct EditRecipeFeature {
                 state.isMustReadSheetPresented = isPresented
                 return .none
                 
-            case .internal(.authStateChanged(let authState)):
-                state.authState = authState
-                return .none
-                
             case .internal(.setScrollToTarget(let target)):
                 state.scrollToTarget = target
                 return .run { send in
@@ -198,32 +177,9 @@ struct EditRecipeFeature {
                 let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.unknownErrorOccurred.message)
                 return .send(.internal(.setFloaterItem(item)))
                 
-            case .fullScreenCover(.dismiss):
-                guard case .loggedIn = state.authState else { return .none }
-                return .send(.view(.submitButtonTapped))
-                
             default:
                 return .none
             }
-        }
-        .ifLet(\.$fullScreenCoverDestination, action: \.fullScreenCover) { FullScreenCoverDestination() }
-    }
-}
-
-extension EditRecipeFeature {
-    @Reducer
-    struct FullScreenCoverDestination {
-        @ObservableState
-        enum State: Equatable {
-            case auth(AuthFeature.State)
-        }
-        
-        enum Action {
-            case auth(AuthFeature.Action)
-        }
-        
-        var body: some Reducer<State, Action> {
-            Scope(state: \.auth, action: \.auth) { AuthFeature() }
         }
     }
 }
@@ -256,13 +212,11 @@ struct EditRecipeView: View {
                     guard let target else { return }
                     withAnimation { proxy.scrollTo(target, anchor: .center) }
                 }
+                .scrollDismissesKeyboard(.immediately)
             }
         }
         .fullScreenCover(isPresented: $store.isMustReadSheetPresented.sending(\.view.setSheetPresented)) {
             MustReadSheet()
-        }
-        .fullScreenCover(item: $store.scope(state: \.fullScreenCoverDestination?.auth, action: \.fullScreenCover.auth)) { authStore in
-            AuthView(store: authStore)
         }
         .floater($store.floaterItem.sending(\.internal.setFloaterItem))
     }

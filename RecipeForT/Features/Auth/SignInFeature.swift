@@ -70,7 +70,7 @@ struct SignInFeature {
                     
                     return .run { send in
                         do {
-                            let signInOutcome = try await authClient.login(idToken, .google)
+                            let signInOutcome = try await authClient.login(idToken, .apple)
                             await send(.signInResponse(result: .success(signInOutcome)))
                         } catch {
                             await send(.signInResponse(result: .failure(error)))
