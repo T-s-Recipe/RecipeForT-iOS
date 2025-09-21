@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol RecipeRepositoryProtocol: Sendable {
+protocol RecipeRepositoryProtocol {
     func create(
         userID: String,
         title: String,

@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol SupportRepositoryProtocol: Sendable {
+protocol SupportRepositoryProtocol {
     func createInquiry(content: String) async throws
     func fetchInquiries() async throws -> [Inquiry]
     func fetchAnnouncements() async throws -> [Announcement]

@@ -8,113 +8,119 @@
 import SwiftUI
 import AuthenticationServices
 import GoogleSignIn
-import ComposableArchitecture
 
-@Reducer
+@MainActor
 struct SignInFeature {
-    @ObservableState
-    struct State: Equatable {
-        
-    }
-    
-    enum Action {
-        @CasePathable
-        enum Delegate {
-            case loginCompleted(AuthClient.SignInOutcome)
-            case loginFailed(FloaterItem)
-        }
-        
+    @Environment(\.router) private var router
+    @Environment(MemberModel.self) private var memberModel
+    @Binding var floaterItem: FloaterItem?
+    @State private var state = SignInState()
+}
+
+// MARK: - ViewFeature Conformation
+extension SignInFeature: ViewFeature {
+    enum UIEvent {
         case signInWithGoogle(result: Result<GIDSignInResult, Error>)
         case signInWithApple(result: Result<ASAuthorization, Error>)
-        case signInResponse(result: Result<AuthClient.SignInOutcome, Error>)
-        case delegate(Delegate)
+        case onFloaterItemChange(FloaterItem)
     }
     
-    @Dependency(\.authClient) var authClient
-    
-    var body: some Reducer<State, Action> {
-        Reduce { state, action in
-            switch action {
-            case .signInWithGoogle(let result):
-                switch result {
-                case .success(let auth):
-                    guard let idToken = auth.user.idToken?.tokenString else {
-                        let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
-                        return .send(.delegate(.loginFailed(item)))
-                    }
-                    
-                    return .run { send in
-                        do {
-                            let signInOutcome = try await authClient.login(idToken, .google)
-                            await send(.signInResponse(result: .success(signInOutcome)))
-                        } catch {
-                            await send(.signInResponse(result: .failure(error)))
-                        }
-                    }
-                    
-                case .failure:
-                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
-                    return .send(.delegate(.loginFailed(item)))
-                }
-                
-            case .signInWithApple(let result):
-                switch result {
-                case .success(let auth):
-                    guard let credential = auth.credential as? ASAuthorizationAppleIDCredential,
-                          let idTokenData = credential.identityToken,
-                          let idToken = String(data: idTokenData, encoding: .utf8)
-                    else {
-                        let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
-                        return .send(.delegate(.loginFailed(item)))
-                    }
-                    
-                    return .run { send in
-                        do {
-                            let signInOutcome = try await authClient.login(idToken, .apple)
-                            await send(.signInResponse(result: .success(signInOutcome)))
-                        } catch {
-                            await send(.signInResponse(result: .failure(error)))
-                        }
-                    }
-                    
-                case .failure:
-                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
-                    return .send(.delegate(.loginFailed(item)))
-                }
-                
-            case .signInResponse(let result):
-                switch result {
-                case .success(let outcome):
-                    return .send(.delegate(.loginCompleted(outcome)))
-                case .failure:
-                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
-                    return .send(.delegate(.loginFailed(item)))
-                }
-                
-            case .delegate:
-                return .none
-            }
+    func notify(_ event: UIEvent) {
+        switch event {
+        case .signInWithGoogle(let result):
+            signInWithGoogle(result)
+        case .signInWithApple(let result):
+            signInWithApple(result)
+        case .onFloaterItemChange(let item):
+            floaterItem = item
         }
     }
 }
 
-struct SignInView: View {
-    let store: StoreOf<SignInFeature>
-    
+// MARK: - View Conformation
+extension SignInFeature: View {
     var body: some View {
         VStack(spacing: 12) {
             SignInWithGoogleButton(.continue) { result in
-                store.send(.signInWithGoogle(result: result))
+                notify(.signInWithGoogle(result: result))
             }
             
             SignInWithAppleButton(.continue) { request in
                 request.nonce = UUID().uuidString
                 request.requestedScopes = [.email, .fullName]
             } onCompletion: { result in
-                store.send(.signInWithApple(result: result))
+                notify(.signInWithApple(result: result))
             }
             .signInWithAppleButtonStyle(.whiteOutline)
             .frame(height: 44)
         }
+        .onChange(of: memberModel.isLoggedIn) { _, isLoggedIn in
+            guard isLoggedIn else { return }
+            router.dismiss()
+        }
     }
+}
+
+// MARK: - Methods
+private extension SignInFeature {
+    func signInWithGoogle(_ result: Result<GIDSignInResult, Error>) {
+        switch result {
+        case .success(let auth):
+            state.cancelTask(for: #function)
+            
+            let task = Task {
+                state.isLoading = true
+                defer { state.isLoading = false }
+                
+                guard let idToken = auth.user.idToken?.tokenString else { return }
+                
+                do {
+                    try await memberModel.login(idToken: idToken, provider: .google)
+                } catch {
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
+                    notify(.onFloaterItemChange(item))
+                }
+            }
+            
+            state.storeTask(for: #function, task: task)
+            
+        case .failure:
+            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
+            notify(.onFloaterItemChange(item))
+        }
+    }
+    
+    func signInWithApple(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let auth):
+            state.cancelTask(for: #function)
+            
+            let task = Task {
+                state.isLoading = true
+                defer { state.isLoading = false }
+                
+                guard let credential = auth.credential as? ASAuthorizationAppleIDCredential,
+                      let idTokenData = credential.identityToken,
+                      let idToken = String(data: idTokenData, encoding: .utf8)
+                else { return }
+                
+                do {
+                    try await memberModel.login(idToken: idToken, provider: .apple)
+                } catch {
+                    let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
+                    notify(.onFloaterItemChange(item))
+                }
+            }
+            
+            state.storeTask(for: #function, task: task)
+            
+        case .failure:
+            let item = FloaterItem(role: .warning, message: FloaterMessageNamespace.authenticationNotCompleted.message)
+            notify(.onFloaterItemChange(item))
+        }
+    }
+}
+
+#Preview {
+    AuthFeature()
 }

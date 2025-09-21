@@ -8,8 +8,8 @@
 import Foundation
 import Moya
 
-protocol NetworkServiceProtocol: Sendable {
-    func request<T>(_ endpoint: T) async throws -> NetworkResponse where T: TargetType
+protocol NetworkServiceProtocol {
+    func request<T>(_ endpoint: T) async throws -> Response where T: TargetType
 }
 
 enum NetworkServiceError: Error {
@@ -24,12 +24,7 @@ enum NetworkServiceError: Error {
     case timeout                          // 요청 시간 초과
 }
 
-struct NetworkResponse: Sendable {
-    let statusCode: Int
-    let data: Data
-}
-
-final class NetworkService: @unchecked Sendable {
+final class NetworkService {
     private let provider: MoyaProvider<MultiTarget>
     
     init(tokenStorage: TokenStorageProtocol) {
@@ -42,16 +37,15 @@ final class NetworkService: @unchecked Sendable {
 
 // MARK: - NetworkServiceProtocol Conformation
 extension NetworkService: NetworkServiceProtocol {
-    func request<T>(_ endpoint: T) async throws -> NetworkResponse where T: TargetType {
+    func request<T>(_ endpoint: T) async throws -> Response where T: TargetType {
         do {
             print("[NetworkService] - Requesting: \(String(describing: endpoint))")
             let response = try await provider.asyncRequest(MultiTarget(endpoint))
-            
-            if let responseString = String(data: response.data, encoding: .utf8) { print("\n\(responseString)") }
+            if let responseString = try? response.mapString() { print("\n\(responseString)") }
             return response
-        } catch let error as NetworkServiceError {
-            print("Network service error: \(error)")
-            throw error
+        } catch let error as MoyaError {
+            let mappedError = mapError(error)
+            throw mappedError
         } catch {
             print("Unexpected error: \(error.localizedDescription)")
             throw NetworkServiceError.networkFailure

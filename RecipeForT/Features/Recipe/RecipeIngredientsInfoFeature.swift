@@ -6,116 +6,59 @@
 //
 
 import SwiftUI
-import ComposableArchitecture
-import UniformTypeIdentifiers
 
-@Reducer
+@MainActor
 struct RecipeIngredientsInfoFeature {
-    @ObservableState
-    struct State: Equatable {
-        var ingredients: IdentifiedArrayOf<IngredientRowFeature.State> = []
-        var sources: IdentifiedArrayOf<IngredientRowFeature.State> = []
-        
-        init(recipe: Recipe?) {
-            let ingredients = (recipe?.ingredients ?? []).map { IngredientRowFeature.State(id: $0.id, ingredient: $0) }
-            let sources = (recipe?.sources ?? []).map { IngredientRowFeature.State(id: $0.id, ingredient: $0) }
-            self.ingredients = IdentifiedArray(uniqueElements: ingredients)
-            self.sources = IdentifiedArray(uniqueElements: sources)
-        }
+    @Bindable var state: EditRecipeState
+}
+
+extension RecipeIngredientsInfoFeature: ViewFeature {
+    enum UIEvent {
+        case addIngredient
+        case removeIngredient(id: UUID)
+        case clearIngredient(id: UUID)
+        case moveIngredientUp(id: UUID)
+        case moveIngredientDown(id: UUID)
+        case onIngredientChanged(Ingredient)
+        case addSource
+        case removeSource(id: UUID)
+        case clearSource(id: UUID)
+        case moveSourceUp(id: UUID)
+        case moveSourceDown(id: UUID)
+        case onSourceChanged(Ingredient)
     }
     
-    enum Action {
-        @CasePathable
-        enum ViewAction {
-            case addIngredientButtonTapped
-            case addSourceButtonTapped
-            case moveIngredient(id: UUID, destinationID: UUID)
-            case moveSource(id: UUID, destinationID: UUID)
+    func notify(_ event: UIEvent) {
+        switch event {
+        case .addIngredient:
+            state.ingredients.append(.init(name: "", units: .init()))
+        case .removeIngredient(let id):
+            removeIngredient(id: id)
+        case .clearIngredient(let id):
+            clearIngredient(id: id)
+        case .moveIngredientUp(let id):
+            onIngredientMoveUp(id: id)
+        case .moveIngredientDown(let id):
+            onIngredientMoveDown(id: id)
+        case .onIngredientChanged(let ingredient):
+            onIngredientChanged(ingredient)
+        case .addSource:
+            state.sources.append(.init(name: "", units: .init()))
+        case .removeSource(let id):
+            removeSource(id: id)
+        case .clearSource(let id):
+            clearSource(id: id)
+        case .moveSourceUp(let id):
+            onSourceMoveUp(id: id)
+        case .moveSourceDown(let id):
+            onSourceMoveDown(id: id)
+        case .onSourceChanged(let ingredient):
+            onSourcechanged(ingredient)
         }
-        
-        case view(ViewAction)
-        case ingredient(IdentifiedAction<IngredientRowFeature.State.ID, IngredientRowFeature.Action>)
-        case source(IdentifiedAction<IngredientRowFeature.State.ID, IngredientRowFeature.Action>)
-    }
-    
-    var body: some Reducer<State, Action> {
-        Reduce { state, action in
-            switch action {
-            case .view(.addIngredientButtonTapped):
-                let newIngredient = Ingredient(name: "", units: .init())
-                state.ingredients.append(.init(id: newIngredient.id, ingredient: newIngredient))
-                return .none
-                
-            case .view(.addSourceButtonTapped):
-                let newSource = Ingredient(name: "", units: .init())
-                state.sources.append(.init(id: newSource.id, ingredient: newSource))
-                return .none
-                
-            case let .view(.moveIngredient(id, destinationID)):
-                guard let index = state.ingredients.index(id: id),
-                      let destinationIndex = state.ingredients.index(id: destinationID)
-                else { return .none }
-                
-                let item = state.ingredients.remove(at: index)
-                state.ingredients.insert(item, at: destinationIndex)
-                return .none
-                
-            case let .view(.moveSource(id, destinationID)):
-                guard let index = state.sources.index(id: id),
-                      let destinationIndex = state.sources.index(id: destinationID)
-                else { return .none }
-                let item = state.sources.remove(at: index)
-                state.sources.insert(item, at: destinationIndex)
-                return .none
-                
-            case let .ingredient(.element(id, .delegate(.removeButtonTapped))):
-                state.ingredients.remove(id: id)
-                return .none
-                
-            case let .ingredient(.element(id, .delegate(.moveUpButtonTapped))):
-                guard let index = state.ingredients.index(id: id),
-                      index > 0
-                else { return .none }
-                state.ingredients.swapAt(index, index - 1)
-                return .none
-                
-            case let .ingredient(.element(id, .delegate(.moveDownButtonTapped))):
-                guard let index = state.ingredients.index(id: id),
-                      index < state.ingredients.count - 1
-                else { return .none }
-                state.ingredients.swapAt(index, index + 1)
-                return .none
-                
-            case let .source(.element(id, .delegate(.removeButtonTapped))):
-                state.sources.remove(id: id)
-                return .none
-                
-            case let .source(.element(id, .delegate(.moveUpButtonTapped))):
-                guard let index = state.sources.index(id: id),
-                      index > 0
-                else { return .none }
-                state.sources.swapAt(index, index - 1)
-                return .none
-                
-            case let .source(.element(id, .delegate(.moveDownButtonTapped))):
-                guard let index = state.sources.index(id: id),
-                      index < state.sources.count - 1
-                else { return .none }
-                state.sources.swapAt(index, index + 1)
-                return .none
-                
-            case .ingredient, .source:
-                return .none
-            }
-        }
-        .forEach(\.ingredients, action: \.ingredient) { IngredientRowFeature() }
-        .forEach(\.sources, action: \.source) { IngredientRowFeature() }
     }
 }
 
-struct RecipeIngredientsInfoView: View {
-    @Bindable var store: StoreOf<RecipeIngredientsInfoFeature>
-    
+extension RecipeIngredientsInfoFeature: View {
     var body: some View {
         VStack(spacing: 12) {
             Text("Ingredients")
@@ -126,11 +69,21 @@ struct RecipeIngredientsInfoView: View {
             Section {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyVStack {
-                        ForEachStore(store.scope(state: \.ingredients, action: \.ingredient)) { ingredientStore in
+                        ForEach($state.ingredients) { $ingredient in
                             VStack {
-                                IngredientRowView(store: ingredientStore)
-                                
-                                if ingredientStore.id != store.ingredients.last?.id {
+                                IngredientRow(ingredient: $ingredient) {
+                                    if ingredient.name.isEmpty {
+                                        notify(.removeIngredient(id: ingredient.id))
+                                    } else {
+                                        notify(.clearIngredient(id: ingredient.id))
+                                    }
+                                } onMoveUp: {
+                                    notify(.moveIngredientUp(id: ingredient.id))
+                                } onMoveDown: {
+                                    notify(.moveIngredientDown(id: ingredient.id))
+                                }
+
+                                if ingredient.id != state.ingredients.last?.id {
                                     Divider().padding(.vertical, 8)
                                 }
                             }
@@ -151,7 +104,7 @@ struct RecipeIngredientsInfoView: View {
             
             HStack {
                 Button {
-                    store.send(.view(.addIngredientButtonTapped))
+                    notify(.addIngredient)
                 } label: {
                     Label("Add Ingredient", systemImage: "plus.circle")
                         .padding()
@@ -169,11 +122,23 @@ struct RecipeIngredientsInfoView: View {
             Section {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyVStack {
-                        ForEachStore(store.scope(state: \.sources, action: \.source)) { sourceStore in
-                            IngredientRowView(store: sourceStore)
-                            
-                            if sourceStore.id != store.sources.last?.id {
-                                Divider().padding(.vertical, 8)
+                        ForEach($state.sources) { $source in
+                            VStack {
+                                IngredientRow(ingredient: $source) {
+                                    if source.name.isEmpty {
+                                        notify(.removeSource(id: source.id))
+                                    } else {
+                                        notify(.clearSource(id: source.id))
+                                    }
+                                } onMoveUp: {
+                                    notify(.moveSourceUp(id: source.id))
+                                } onMoveDown: {
+                                    notify(.moveSourceDown(id: source.id))
+                                }
+
+                                if source.id != state.sources.last?.id {
+                                    Divider().padding(.vertical, 8)
+                                }
                             }
                         }
                     }
@@ -192,9 +157,9 @@ struct RecipeIngredientsInfoView: View {
             
             HStack {
                 Button {
-                    store.send(.view(.addSourceButtonTapped))
+                    notify(.addSource)
                 } label: {
-                    Label("Add Source", systemImage: "plus.circle")
+                    Label("Add Ingredient", systemImage: "plus.circle")
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(
@@ -207,16 +172,9 @@ struct RecipeIngredientsInfoView: View {
             }
         }
     }
-}
-
-@Reducer
-struct IngredientRowFeature {
-    let maxNameLength: Int = 20
     
-    @ObservableState
-    struct State: Equatable, Identifiable {
-        let id: UUID
-        var ingredient: Ingredient
+    private func removeIngredient(id: UUID) {
+        state.ingredients.removeAll(where: { $0.id == id })
     }
     
     enum Action {
@@ -224,6 +182,16 @@ struct IngredientRowFeature {
         enum ViewAction {
             case ingredientNameChanged(String)
             case setUnit(MeasurementUnit, Decimal?)
+    private func clearIngredient(id: UUID) {
+        if let index = state.ingredients.firstIndex(where: { $0.id == id }) {
+            state.ingredients[index].name.removeAll()
+            state.ingredients[index].units.cup = nil
+            state.ingredients[index].units.gram = nil
+            state.ingredients[index].units.milliliters = nil
+            state.ingredients[index].units.ounce = nil
+            state.ingredients[index].units.quantity = nil
+            state.ingredients[index].units.tablespoon = nil
+            state.ingredients[index].units.teaspoon = nil
         }
         
         @CasePathable
@@ -231,40 +199,79 @@ struct IngredientRowFeature {
             case removeButtonTapped
             case moveUpButtonTapped
             case moveDownButtonTapped
-        }
-        
-        case view(ViewAction)
-        case delegate(Delegate)
     }
     
-    var body: some Reducer<State, Action> {
-        Reduce { state, action in
-            switch action {
-            case .view(.ingredientNameChanged(let name)):
-                guard name.count > maxNameLength else { return .none }
-                state.ingredient.name = name
-                return .none
-                
-            case let .view(.setUnit(unit, value)):
-                state.ingredient.units[unit] = value
-                return .none
-                
-            case .delegate:
-                return .none
-            }
+    private func onIngredientMoveUp(id: UUID) {
+        if let index = state.ingredients.firstIndex(where: { $0.id == id }),
+           index > 0 {
+            state.ingredients.swapAt(index, index - 1)
         }
+    }
+    
+    private func onIngredientMoveDown(id: UUID) {
+        if let index = state.ingredients.firstIndex(where: { $0.id == id }),
+           index < state.ingredients.count - 1 {
+            state.ingredients.swapAt(index, index + 1)
+        }
+    }
+    
+    private func onIngredientChanged(_ ingredient: Ingredient) {
+        guard let index = state.ingredients.firstIndex(where: { $0.id == ingredient.id }) else { return }
+        state.ingredients[index] = ingredient
+    }
+    
+    private func removeSource(id: UUID) {
+        state.sources.removeAll { $0.id == id }
+    }
+    
+    private func clearSource(id: UUID) {
+        if let index = state.sources.firstIndex(where: { $0.id == id }) {
+            state.sources[index].name.removeAll()
+            state.sources[index].units.cup = nil
+            state.sources[index].units.gram = nil
+            state.sources[index].units.milliliters = nil
+            state.sources[index].units.ounce = nil
+            state.sources[index].units.quantity = nil
+            state.sources[index].units.tablespoon = nil
+            state.sources[index].units.teaspoon = nil
+        }
+    }
+    
+    private func onSourceMoveUp(id: UUID) {
+        if let index = state.sources.firstIndex(where: { $0.id == id }),
+           index > 0 {
+            state.sources.swapAt(index, index - 1)
+        }
+    }
+    
+    private func onSourceMoveDown(id: UUID) {
+        if let index = state.sources.firstIndex(where: { $0.id == id }),
+           index < state.sources.count - 1 {
+            state.sources.swapAt(index, index + 1)
+        }
+    }
+    
+    private func onSourcechanged(_ source: Ingredient) {
+        guard let index = state.sources.firstIndex(where: { $0.id == source.id }) else { return }
+        state.sources[index] = source
     }
 }
 
-struct IngredientRowView: View {
-    @Bindable var store: StoreOf<IngredientRowFeature>
+struct IngredientRow: View {
+    @Binding var ingredient: Ingredient
     @State private var formatter = DecimalFormatter()
+    
+    private let maxNameLength: Int = 20
+    
+    let onRemove: () -> Void
+    let onMoveUp: () -> Void
+    let onMoveDown: () -> Void
     
     var body: some View {
         HStack(spacing: 12) {
             VStack(spacing: 0) {
                 Button {
-                    store.send(.delegate(.moveUpButtonTapped))
+                    onMoveUp()
                 } label: {
                     Image(systemName: "chevron.up")
                         .padding(.horizontal, 7)
@@ -278,7 +285,7 @@ struct IngredientRowView: View {
                 .tint(.gray)
                 
                 Button {
-                    store.send(.delegate(.moveDownButtonTapped))
+                    onMoveDown()
                 } label: {
                     Image(systemName: "chevron.down")
                         .padding(.horizontal, 7)
@@ -293,7 +300,7 @@ struct IngredientRowView: View {
             }
             
             Button {
-                store.send(.delegate(.removeButtonTapped))
+                onRemove()
             } label: {
                 Image(systemName: "minus.circle")
             }
@@ -302,7 +309,7 @@ struct IngredientRowView: View {
             VStack(alignment: .leading) {
                 Text("Name")
                 
-                TextField("Ingredient name", text: $store.ingredient.name.sending(\.view.ingredientNameChanged))
+                TextField("Ingredient name", text: $ingredient.name)
                     .padding(12)
                     .frame(height: 44)
                     .background(
@@ -313,38 +320,36 @@ struct IngredientRowView: View {
             }
             
             Group {
-                decimalTextField("Tbsp", unit: .tablespoon)
-                decimalTextField("Tsp", unit: .teaspoon)
-                decimalTextField("Cup", unit: .cup)
-                decimalTextField("g", unit: .gram)
-                decimalTextField("ml", unit: .milliliters)
-                decimalTextField("oz", unit: .ounce)
-                decimalTextField("Qty", unit: .quantity)
+                decimalTextField("Tbsp", value: $ingredient.units[.tablespoon])
+                decimalTextField("Tsp", value: $ingredient.units[.teaspoon])
+                decimalTextField("Cup", value: $ingredient.units[.cup])
+                decimalTextField("g", value: $ingredient.units[.gram])
+                decimalTextField("ml", value: $ingredient.units[.milliliters])
+                decimalTextField("oz", value: $ingredient.units[.ounce])
+                decimalTextField("Qty", value: $ingredient.units[.quantity])
             }
         }
     }
     
-    @ViewBuilder private func decimalTextField(_ label: any StringProtocol, unit: MeasurementUnit) -> some View {
+    @ViewBuilder private func decimalTextField(_ label: any StringProtocol, value: Binding<Decimal?>) -> some View {
         VStack {
             Text(label)
             
-            TextField(
-                "0",
-                value: Binding(
-                    get: { store.ingredient.units[unit] },
-                    set: { store.send(.view(.setUnit(unit, $0))) }
-                ),
-                formatter: formatter
-            )
-            .keyboardType(.decimalPad)
-            .multilineTextAlignment(.trailing)
-            .padding(12)
-            .frame(width: 80, height: 44)
-            .background(
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(.clear)
-                    .strokeBorder(.gray)
-            )
+            TextField("0", value: value, formatter: formatter)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .padding(12)
+                .frame(width: 80, height: 44)
+                .background(
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(.clear)
+                        .strokeBorder(.gray)
+                )
         }
+    }
+    
+    private func onNameChange(_ : String, after: String) {
+        guard after.count > maxNameLength else { return }
+        ingredient.name = String(after.prefix(maxNameLength))
     }
 }

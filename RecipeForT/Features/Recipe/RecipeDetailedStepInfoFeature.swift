@@ -6,52 +6,41 @@
 //
 
 import SwiftUI
-import ComposableArchitecture
 
-@Reducer
+@MainActor
 struct RecipeDetailedStepInfoFeature {
-    @ObservableState
-    struct State: Equatable {
-        var steps: IdentifiedArrayOf<RecipeStepFeature.State> = []
-        
-        init(recipe: Recipe?) {
-            let steps = (recipe?.detailedSteps ?? []).map { RecipeStepFeature.State(step: $0) }
-            self.steps = IdentifiedArray(uniqueElements: steps)
-        }
+    @Bindable var state: EditRecipeState
+}
+
+extension RecipeDetailedStepInfoFeature: ViewFeature {
+    enum UIEvent {
+        case addStep
+        case removeStep(UUID)
+        case addProcess(stepID: UUID)
+        case onRemoveProcess(stepID: UUID, processID: UUID)
+        case onMoveProcessUp(stepID: UUID, processID: UUID)
+        case onMoveProcessDown(stepID: UUID, processID: UUID)
     }
     
-    enum Action {
-        @CasePathable
-        enum ViewAction {
-            case addStepButtonTapped
-        }
-        
-        case view(ViewAction)
-        case step(IdentifiedAction<RecipeStepFeature.State.ID, RecipeStepFeature.Action>)
-    }
-    
-    var body: some Reducer<State, Action> {
-        Reduce { state, action in
-            switch action {
-            case .view(.addStepButtonTapped):
-                let newStep = CookingStep(title: "Step \(state.steps.count + 1)", detailedProcesses: [])
-                state.steps.append(.init(step: newStep))
-                return .none
-                
-            case let .step(.element(id, .delegate(.removeStepButtonTapped))):
-                state.steps.remove(id: id)
-                return .none
-                
-            case .step:
-                return .none
-            }
+    func notify(_ event: UIEvent) {
+        switch event {
+        case .addStep:
+            addStep()
+        case .removeStep(let id):
+            removeStep(id)
+        case .addProcess(let stepID):
+            addProcess(stepID)
+        case .onRemoveProcess(let stepID, let processID):
+            onRemoveProcess(stepID, processID)
+        case .onMoveProcessUp(let stepID, let processID):
+            onMoveProcessUp(stepID, processID)
+        case .onMoveProcessDown(let stepID, let processID):
+            onMoveProcessDown(stepID, processID)
         }
     }
 }
 
-struct RecipeDetailedStepInfoView: View {
-    @Bindable var store: StoreOf<RecipeDetailedStepInfoFeature>
-    
+extension RecipeDetailedStepInfoFeature: View {
     var body: some View {
         VStack(spacing: 12) {
             Text("Detailed Steps")
@@ -59,14 +48,68 @@ struct RecipeDetailedStepInfoView: View {
                 .padding(.top, 16)
             
             LazyVStack {
-                ForEachStore(store.scope(state: \.steps, action: \.step)) { stepStore in
-                    RecipeStepView(store: stepStore)
+                ForEach($state.steps) { $step in
+                    Section {
+                        ForEach($step.detailedProcesses) { $process in
+                            DetailedProcessCell(process: $process) {
+                                notify(.onRemoveProcess(stepID: step.id, processID: process.id))
+                            } onMoveUp: {
+                                notify(.onMoveProcessUp(stepID: step.id, processID: process.id))
+                            } onMoveDown: {
+                                notify(.onMoveProcessDown(stepID: step.id, processID: process.id))
+                            }
+                            
+                            if process.id != step.detailedProcesses.last?.id {
+                                Divider().padding(.vertical, 8)
+                            }
+                        }
+                    } header: {
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                TextField(step.title, text: $step.title)
+                                    .font(.headline)
+                                
+                                Spacer()
+                                
+                                Button {
+                                    notify(.removeStep(step.id))
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                            }
+                            
+                            Rectangle()
+                                .frame(height: 2)
+                            
+                            Text("Detailed process *")
+                            
+                            Text("Photo: Optional / Recipe: Required")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding([.top, .horizontal])
+                    } footer: {
+                        HStack {
+                            Button {
+                                notify(.addProcess(stepID: step.id))
+                            } label: {
+                                Label("Add Ingredient", systemImage: "plus.circle")
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .fill(.gray)
+                                    )
+                            }
+                            .tint(.white)
+                            .padding([.horizontal, .bottom])
+                        }
+                    }
                 }
             }
             
             HStack {
                 Button {
-                    store.send(.view(.addStepButtonTapped))
+                    notify(.addStep)
                 } label: {
                     Label("Next Step", systemImage: "plus.circle")
                         .padding()
@@ -83,184 +126,55 @@ struct RecipeDetailedStepInfoView: View {
     }
 }
 
-@Reducer
-struct RecipeStepFeature {
-    @ObservableState
-    struct State: Equatable, Identifiable {
-        let id: UUID
-        var title: String
-        var processes: IdentifiedArrayOf<DetailProcessCellFeature.State> = []
-        
-        init(step: CookingStep) {
-            id = step.id
-            title = step.title
-            processes = IdentifiedArray(uniqueElements: step.detailedProcesses.map { DetailProcessCellFeature.State(id: $0.id, process: $0)})
-        }
+private extension RecipeDetailedStepInfoFeature {
+    func addStep() {
+        state.steps.append(.init(title: "Step \(state.steps.count + 1)"))
     }
     
-    enum Action {
-        @CasePathable
-        enum ViewAction {
-            case titleChanged(String)
-            case addProcessButtonTapped
-        }
-        
-        @CasePathable
-        enum Delegate {
-            case removeStepButtonTapped
-        }
-        
-        case view(ViewAction)
-        case delegate(Delegate)
-        case process(IdentifiedAction<DetailProcessCellFeature.State.ID, DetailProcessCellFeature.Action>)
+    func removeStep(_ id: UUID) {
+        state.steps.removeAll(where: { $0.id == id })
     }
     
-    var body: some Reducer<State, Action> {
-        Reduce { state, action in
-            switch action {
-            case .view(.titleChanged(let title)):
-                state.title = title
-                return .none
-                
-            case .view(.addProcessButtonTapped):
-                let newProcess = CookingDetailedProcess(description: "")
-                state.processes.append(.init(id: newProcess.id, process: newProcess))
-                return .none
-                
-            case let .process(.element(id, .delegate(.removeButtonTapped))):
-                state.processes.remove(id: id)
-                return .none
-                
-            case let .process(.element(id, .delegate(.moveUpButtonTapped))):
-                guard let index = state.processes.index(id: id),
-                      index > 0 else
-                { return .none }
-                state.processes.swapAt(index, index - 1)
-                return .none
-                
-            case let .process(.element(id, .delegate(.moveDownButtonTapped))):
-                guard let index = state.processes.index(id: id),
-                      index < state.processes.count - 1
-                else { return .none }
-                state.processes.swapAt(index, index + 1)
-                return .none
-                
-            case .delegate, .process:
-                return .none
-            }
-        }
-        .forEach(\.processes, action: \.process) { DetailProcessCellFeature() }
+    func addProcess(_ stepID: UUID) {
+        guard let index = state.steps.firstIndex(where: { $0.id == stepID }) else { return }
+        state.steps[index].detailedProcesses.append(.init(description: ""))
+    }
+    
+    func onRemoveProcess(_ stepID: UUID, _ processID: UUID) {
+        guard let stepIndex = state.steps.firstIndex(where: { $0.id == stepID }),
+              let processIndex = state.steps[stepIndex].detailedProcesses.firstIndex(where: { $0.id == processID })
+        else { return }
+        state.steps[stepIndex].detailedProcesses.remove(at: processIndex)
+    }
+    
+    func onMoveProcessUp(_ stepID: UUID, _ processID: UUID) {
+        guard let stepIndex = state.steps.firstIndex(where: { $0.id == stepID }),
+              let processIndex = state.steps[stepIndex].detailedProcesses.firstIndex(where: { $0.id == processID })
+        else { return }
+        state.steps[stepIndex].detailedProcesses.swapAt(processIndex, processIndex - 1)
+    }
+    
+    func onMoveProcessDown(_ stepID: UUID, _ processID: UUID) {
+        guard let stepIndex = state.steps.firstIndex(where: { $0.id == stepID }),
+              let processIndex = state.steps[stepIndex].detailedProcesses.firstIndex(where: { $0.id == processID })
+        else { return }
+        state.steps[stepIndex].detailedProcesses.swapAt(processIndex, processIndex + 1)
     }
 }
 
-struct RecipeStepView: View {
-    @Bindable var store: StoreOf<RecipeStepFeature>
+struct DetailedProcessCell: View {
+    @Binding var process: CookingDetailedProcess
     
-    var body: some View {
-        Section {
-            ForEachStore(store.scope(state: \.processes, action: \.process)) { processStore in
-                DetailedProcessCellView(store: processStore)
-                
-                if processStore.id != store.state.processes.last?.id {
-                    Divider().padding(.vertical, 8)
-                }
-            }
-        } header: {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    TextField(store.title, text: $store.title.sending(\.view.titleChanged))
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    Button {
-                        store.send(.delegate(.removeStepButtonTapped))
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                }
-                
-                Rectangle()
-                    .frame(height: 2)
-                
-                Text("Detailed process *")
-                
-                Text("Photo: Optional / Recipe: Required")
-                    .foregroundStyle(.secondary)
-            }
-            .padding([.top, .horizontal])
-        } footer: {
-            HStack {
-                Button {
-                    store.send(.view(.addProcessButtonTapped))
-                } label: {
-                    Label("Add Ingredient", systemImage: "plus.circle")
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 5)
-                                .fill(.gray)
-                        )
-                }
-                .tint(.white)
-                .padding([.horizontal, .bottom])
-            }
-        }
-    }
-}
-
-@Reducer
-struct DetailProcessCellFeature {
-    @ObservableState
-    struct State: Equatable, Identifiable {
-        let id: UUID
-        var process: CookingDetailedProcess
-        
-        static func == (lhs: DetailProcessCellFeature.State, rhs: DetailProcessCellFeature.State) -> Bool {
-            lhs.id == rhs.id && lhs.process.id == rhs.process.id
-        }
-    }
-    
-    enum Action {
-        @CasePathable
-        enum ViewAction {
-            case descriptionChanged(String)
-        }
-        
-        @CasePathable
-        enum Delegate {
-            case removeButtonTapped
-            case moveUpButtonTapped
-            case moveDownButtonTapped
-        }
-        
-        case view(ViewAction)
-        case delegate(Delegate)
-    }
-    
-    var body: some Reducer<State, Action> {
-        Reduce { state, action in
-            switch action {
-            case .view(.descriptionChanged(let text)):
-                state.process.description = text
-                return .none
-                
-            case .delegate:
-                return .none
-            }
-        }
-    }
-}
-
-struct DetailedProcessCellView: View {
-    @Bindable var store: StoreOf<DetailProcessCellFeature>
+    let onRemove: () -> Void
+    let onMoveUp: () -> Void
+    let onMoveDown: () -> Void
     
     var body: some View {
         HStack(alignment: .top) {
             HStack {
                 VStack(spacing: 0) {
                     Button {
-                        store.send(.delegate(.moveUpButtonTapped))
+                        onMoveUp()
                     } label: {
                         Image(systemName: "chevron.up")
                             .padding(.horizontal, 7)
@@ -274,7 +188,7 @@ struct DetailedProcessCellView: View {
                     .tint(.gray)
                     
                     Button {
-                        store.send(.delegate(.moveDownButtonTapped))
+                        onMoveDown()
                     } label: {
                         Image(systemName: "chevron.down")
                             .padding(.horizontal, 7)
@@ -289,7 +203,7 @@ struct DetailedProcessCellView: View {
                 }
                 
                 Button {
-                    store.send(.delegate(.removeButtonTapped))
+                    onRemove()
                 } label: {
                     Image(systemName: "minus.circle")
                 }
@@ -297,7 +211,9 @@ struct DetailedProcessCellView: View {
             }
             
             VStack(alignment: .leading) {
-                TextField("Description here", text: $store.process.description.sending(\.view.descriptionChanged), axis: .vertical)
+//                ImagePickerFeature(selectedImageItem: <#T##Binding<ImageItem?>#>)
+                
+                TextField("Description here", text: $process.description, axis: .vertical)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)
                     .foregroundStyle(.primary)
@@ -311,4 +227,8 @@ struct DetailedProcessCellView: View {
         }
         .padding()
     }
+}
+
+#Preview {
+    EditRecipeFeature(recipe: nil)
 }

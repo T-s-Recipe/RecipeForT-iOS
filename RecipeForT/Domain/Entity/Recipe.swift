@@ -71,8 +71,8 @@ final class Recipe: Identifiable, Equatable {
 }
 
 /// 음식 재료
-struct Ingredient: Identifiable, Equatable, Codable {
-    var id: UUID = UUID()
+struct Ingredient: Identifiable, Equatable {
+    let id: UUID = UUID()
     /// 재료 이름
     var name: String
     /// 계량 단위
@@ -83,7 +83,7 @@ struct Ingredient: Identifiable, Equatable, Codable {
     }
 }
 
-struct MeasurementUnitDataSource: Codable {
+struct MeasurementUnitDataSource {
     var quantity: Decimal?
     var tablespoon: Decimal?
     var teaspoon: Decimal?
@@ -144,12 +144,11 @@ enum MeasurementUnit: CaseIterable {
 
 /// 조리과정
 struct CookingStep: Identifiable, Equatable {
-    let id: UUID
+    let id: UUID = UUID()
     var title: String
     var detailedProcesses: [CookingDetailedProcess]
     
-    init(id: UUID = UUID(), title: String, detailedProcesses: [CookingDetailedProcess] = [.init(description: "")]) {
-        self.id = id
+    init(title: String, detailedProcesses: [CookingDetailedProcess] = [.init(description: "")]) {
         self.title = title
         self.detailedProcesses = detailedProcesses
     }

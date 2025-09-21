@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import Moya
 
-protocol MemberRepositoryProtocol: Sendable {
+protocol MemberRepositoryProtocol {
     func signIn(idToken: String, provider: OAuthProvider) async throws -> SignInAttemptRecord
     func signUp(ci: String, provider: OAuthProvider, nickname: String) async throws -> Member
     func fetchMember() async throws -> Member
@@ -27,6 +28,12 @@ enum MemberRepositoryError: Error {
 }
 
 final class MemberRepository {
+    private(set) var authenticationState: AuthenticationState = .loggedOut
+    var isLoggedIn: Bool {
+        guard case .loggedIn = authenticationState else { return false }
+        return true
+    }
+    
     private let networkService: NetworkServiceProtocol
     private let tokenStorage: TokenStorageProtocol
     private let decoder: JSONDecoder
@@ -128,7 +135,7 @@ extension MemberRepository: MemberRepositoryProtocol {
     func fetchRandomNickname() async throws -> String {
         let endpoint = Endpoint.fetchRandomNickname
         
-        let response: NetworkResponse
+        let response: Response
         do {
             response = try await networkService.request(endpoint)
         } catch let error as NetworkServiceError {
@@ -144,7 +151,7 @@ extension MemberRepository: MemberRepositoryProtocol {
         
         do {
             let response = try await networkService.request(endpoint)
-            let isDuplicated = String(data: response.data, encoding: .utf8) == "true" ? true : false
+            let isDuplicated = try response.mapString() == "true" ? true : false
             return isDuplicated
         } catch let error as NetworkServiceError {
             throw MemberRepositoryError.networkError(error)
@@ -159,6 +166,7 @@ extension MemberRepository: MemberRepositoryProtocol {
         do {
             _ = try await networkService.request(endpoint)
             UserDefaults.standard.removeObject(forKey: AppStorageKey.userID)
+            authenticationState = .loggedOut
             try tokenStorage.delete()
         } catch let error as NetworkServiceError {
             throw MemberRepositoryError.networkError(error)
